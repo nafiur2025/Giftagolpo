@@ -5,7 +5,7 @@ import { Camera, Sparkles, Lock, ArrowRight, User, BookOpen, Star, Menu, X, Down
 // PREVIEW MODE: Using hardcoded key for this demo environment.
 // DEPLOYMENT INSTRUCTION: When you deploy to Netlify, replace the line below with:
 // const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+const API_KEY = import.meta.env.VITE_GEMINI_API_KEY; 
 
 const THEMES = [
   { id: 'space', label: 'Space Hero', icon: '🚀', bg: 'from-blue-900 to-black', prompt: "a sci-fi space adventure" },
@@ -201,7 +201,7 @@ export default function App() {
         // Pass user photo directly to Nano Banana for consistent character generation
         const imgUrl = await generateImageWithNanoBanana(
           updatedPages[i].image_prompt, 
-          formData.photoBase64,
+          formData.photoBase64, 
           formData.photoMimeType
         );
         
@@ -597,70 +597,77 @@ export default function App() {
              </div>
           </div>
 
-          {/* 2. STORY PAGES (1-3) */}
+          {/* 2. STORY PAGES (1-3) - Split into Image Page then Text Page */}
           {visiblePages.map((page, index) => (
-            <div key={page.id} className="w-full h-full flex-shrink-0 snap-center flex flex-col bg-[#fdfbf7]">
-              {/* Image Area (Top ~55%) */}
-              <div className="h-[55%] w-full bg-slate-100 relative overflow-hidden">
-                 {page.generatedImage ? (
-                   <img src={page.generatedImage} className="w-full h-full object-cover" loading="lazy" />
-                 ) : (
-                   <div className="w-full h-full flex items-center justify-center text-gray-300 bg-gray-100">Image Loading...</div>
-                 )}
-                 <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[#fdfbf7] to-transparent"></div>
+            <React.Fragment key={page.id}>
+              {/* IMAGE PAGE */}
+              <div className="w-full h-full flex-shrink-0 snap-center flex flex-col items-center justify-center bg-[#fdfbf7] p-6 relative">
+                  <div className="w-full max-w-sm aspect-square shadow-lg rounded-md overflow-hidden border-8 border-white bg-white">
+                     {page.generatedImage ? (
+                       <img src={page.generatedImage} className="w-full h-full object-cover" loading="lazy" />
+                     ) : (
+                       <div className="w-full h-full flex items-center justify-center text-gray-300 bg-gray-100">Image Loading...</div>
+                     )}
+                  </div>
+                  <div className="absolute bottom-4 text-gray-300 text-[10px] font-mono">SCENE {index + 1}</div>
               </div>
-              
-              {/* Text Area (Bottom ~45%) */}
-              <div className="h-[45%] p-8 flex flex-col items-center text-center justify-center relative">
-                 <span className="absolute top-4 text-xs font-bold text-gray-300 tracking-[0.2em]">PAGE {index + 1}</span>
-                 <p className="text-gray-800 font-serif text-lg leading-loose md:text-xl max-w-md">
-                   {page.text}
-                 </p>
-                 <div className="absolute bottom-6 w-full flex justify-center gap-1">
-                    {/* Pagination Dots */}
-                    {[...Array(5)].map((_, i) => (
-                      <div key={i} className={`w-1.5 h-1.5 rounded-full ${i === index ? 'bg-indigo-600' : 'bg-gray-300'}`}></div>
-                    ))}
-                 </div>
+
+              {/* TEXT PAGE */}
+              <div className="w-full h-full flex-shrink-0 snap-center flex flex-col items-center justify-center bg-[#fdfbf7] p-10 relative text-center">
+                  <div className="max-w-xs">
+                    <div className="text-indigo-200 mb-6 flex justify-center"><Star size={24} /></div>
+                    <p className="text-gray-800 font-serif text-xl leading-9 md:text-2xl">
+                      {page.text}
+                    </p>
+                  </div>
+                  <div className="absolute bottom-4 text-gray-300 text-[10px] font-mono">PAGE {index + 1}</div>
               </div>
-            </div>
+            </React.Fragment>
           ))}
 
-          {/* 3. LOCKED PAGE (Page 4) */}
+          {/* 3. LOCKED CONTENT (Page 4) */}
           {lockedPage && (
-            <div className="w-full h-full flex-shrink-0 snap-center flex flex-col bg-[#fdfbf7] relative">
-               <div className="h-[55%] w-full bg-slate-100 relative overflow-hidden">
-                 <img 
-                    src={lockedPage.generatedImage || "https://placehold.co/800x800"} 
-                    className="w-full h-full object-cover blur-xl opacity-60 scale-110" 
-                    loading="lazy" 
-                 />
-                 <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="bg-white/90 backdrop-blur-md p-6 rounded-3xl shadow-xl flex flex-col items-center text-center max-w-[280px]">
-                       <div className="bg-indigo-100 p-4 rounded-full mb-4 text-indigo-600">
-                         <Lock size={32} />
-                       </div>
-                       <h3 className="font-bold text-xl text-slate-900 mb-2">The Adventure Continues...</h3>
-                       <p className="text-sm text-slate-500 mb-6">Unlock the rest of {formData.name}'s story to see what happens next!</p>
-                       {!isSignedIn ? (
-                         <button onClick={handleSignIn} className="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold text-sm shadow-lg hover:bg-indigo-700">
-                           Sign In to Read Free
-                         </button>
-                       ) : (
-                         <button className="w-full bg-gray-200 text-gray-500 py-3 rounded-xl font-bold text-sm cursor-not-allowed">
-                           Unlocked (Preview)
-                         </button>
-                       )}
-                    </div>
-                 </div>
-               </div>
-               
-               <div className="h-[45%] p-8 flex flex-col items-center text-center justify-center relative filter blur-sm select-none opacity-50">
-                 <p className="text-gray-800 font-serif text-lg leading-loose">
-                   {lockedPage.text}
-                 </p>
-               </div>
-            </div>
+            <React.Fragment>
+               {/* LOCKED TEXT PAGE (The Hook) - Visible */}
+               <div className="w-full h-full flex-shrink-0 snap-center flex flex-col items-center justify-center bg-[#fdfbf7] p-10 relative text-center">
+                  <div className="max-w-xs">
+                    <div className="text-indigo-200 mb-6 flex justify-center"><Star size={24} /></div>
+                    <p className="text-gray-800 font-serif text-xl leading-9 md:text-2xl">
+                      {lockedPage.text}
+                    </p>
+                  </div>
+                  <div className="absolute bottom-4 text-gray-300 text-[10px] font-mono">PAGE 4</div>
+              </div>
+
+              {/* LOCKED IMAGE PAGE - Blurred */}
+              <div className="w-full h-full flex-shrink-0 snap-center flex flex-col items-center justify-center bg-[#fdfbf7] p-6 relative">
+                  <div className="w-full max-w-sm aspect-square shadow-lg rounded-md overflow-hidden border-8 border-white bg-white relative">
+                     <img 
+                        src={lockedPage.generatedImage || "https://placehold.co/800x800"} 
+                        className="w-full h-full object-cover blur-xl opacity-60 scale-110" 
+                        loading="lazy" 
+                     />
+                     <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="bg-white/90 backdrop-blur-md p-6 rounded-3xl shadow-xl flex flex-col items-center text-center max-w-[200px]">
+                           <div className="bg-indigo-100 p-4 rounded-full mb-4 text-indigo-600">
+                             <Lock size={28} />
+                           </div>
+                           <h3 className="font-bold text-lg text-slate-900 mb-2">See the Magic!</h3>
+                           {!isSignedIn ? (
+                             <button onClick={handleSignIn} className="w-full bg-indigo-600 text-white py-2 rounded-lg font-bold text-xs shadow-lg hover:bg-indigo-700">
+                               Sign In to Unlock
+                             </button>
+                           ) : (
+                             <button className="w-full bg-gray-200 text-gray-500 py-2 rounded-lg font-bold text-xs cursor-not-allowed">
+                               Unlocked (Preview)
+                             </button>
+                           )}
+                        </div>
+                     </div>
+                  </div>
+                  <div className="absolute bottom-4 text-gray-300 text-[10px] font-mono">SCENE 4 (LOCKED)</div>
+              </div>
+            </React.Fragment>
           )}
 
           {/* 4. UPSELL / FINAL PAGE */}
