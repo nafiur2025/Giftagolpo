@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Camera, Sparkles, Lock, ArrowRight, User, BookOpen, Star, Menu, X, Download, ShoppingBag, Check, Shuffle, AlertCircle, Heart, Truck, ChevronRight, Upload, Plus, Trash2, Users } from 'lucide-react';
+import { Camera, Sparkles, Lock, ArrowRight, User, BookOpen, Star, Menu, X, Download, ShoppingBag, Check, Shuffle, AlertCircle, Heart, Truck, ChevronRight, Upload, Plus, Trash2, Users, Palette } from 'lucide-react';
 
 // --- CONFIGURATION ---
 // PREVIEW MODE: Using hardcoded key for this demo environment.
@@ -272,6 +272,50 @@ const CreatePage = ({ formData, setFormData, handlePhotoUpload, handleAutoGenera
               className="w-full p-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-lg" 
               placeholder="e.g. Sadia"
             />
+          </div>
+
+          {/* ART STYLE SELECTOR */}
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-2">Drawing Style</label>
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <button
+                onClick={() => setFormData({...formData, artStyle: 'vibrant'})}
+                className={`p-4 rounded-xl border text-left flex flex-col gap-2 transition-all ${
+                  (formData.artStyle || 'vibrant') === 'vibrant'
+                  ? 'border-indigo-600 bg-indigo-50 ring-1 ring-indigo-600' 
+                  : 'border-gray-200 bg-white hover:border-indigo-300'
+                }`}
+              >
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-pink-400 to-indigo-500 flex items-center justify-center text-white shadow-sm">
+                  <Palette size={16} />
+                </div>
+                <div className="flex flex-col">
+                  <span className={`text-sm font-bold ${(formData.artStyle || 'vibrant') === 'vibrant' ? 'text-indigo-900' : 'text-gray-600'}`}>
+                    Vibrant 3D
+                  </span>
+                  <span className="text-[10px] text-gray-400 leading-tight">Bright, colorful digital art (Current)</span>
+                </div>
+              </button>
+
+              <button
+                onClick={() => setFormData({...formData, artStyle: 'sketch'})}
+                className={`p-4 rounded-xl border text-left flex flex-col gap-2 transition-all ${
+                  formData.artStyle === 'sketch'
+                  ? 'border-indigo-600 bg-indigo-50 ring-1 ring-indigo-600' 
+                  : 'border-gray-200 bg-white hover:border-indigo-300'
+                }`}
+              >
+                <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 shadow-sm border border-gray-300">
+                  <div className="w-4 h-4 bg-gray-400 rounded-full opacity-50"></div>
+                </div>
+                <div className="flex flex-col">
+                  <span className={`text-sm font-bold ${formData.artStyle === 'sketch' ? 'text-indigo-900' : 'text-gray-600'}`}>
+                    Classic Sketch
+                  </span>
+                  <span className="text-[10px] text-gray-400 leading-tight">Hand-drawn, artistic & textured</span>
+                </div>
+              </button>
+            </div>
           </div>
 
           {/* SIDEKICKS SECTION */}
@@ -671,7 +715,8 @@ export default function App() {
     photoBase64: null, // Raw data for API
     photoMimeType: null,
     sidekicks: [],     // Added for additional characters
-    customPrompt: '' 
+    customPrompt: '',
+    artStyle: 'vibrant' // Default style
   });
   const [isSignedIn, setIsSignedIn] = useState(false);
   
@@ -687,7 +732,7 @@ export default function App() {
 
   // 1. Generate Image using Gemini 2.5 Flash Image Preview ("Nano Banana")
   // Strictly using Nano Banana with NO fallback to Imagen.
-  const generateImageWithNanoBanana = async (imagePrompt, referencePhotoBase64, mimeType, isCover = false, title = "") => {
+  const generateImageWithNanoBanana = async (imagePrompt, referencePhotoBase64, mimeType, isCover = false, title = "", artStyle = "vibrant") => {
     if (!API_KEY) {
         setError("Missing API Key. Check your Netlify Environment Variables.");
         return null;
@@ -696,10 +741,16 @@ export default function App() {
     try {
       let promptText = "";
       
+      // Select Style Prompt based on user choice
+      let styleDescription = "Children's book illustration, vibrant colors, high quality digital art.";
+      if (artStyle === 'sketch') {
+        styleDescription = "Hand-drawn pencil sketch, classic storybook style, black and white or muted tones, detailed artistic drawing.";
+      }
+
       if (isCover) {
-          promptText = `A children's book cover illustration. The title "${title}" must be clearly written on the image in a fun, bold, legible font. The scene depicts: ${imagePrompt}. The main character in the scene must look like the person in the provided reference image. Style: Children's book illustration, vibrant colors, high quality digital art.`;
+          promptText = `A children's book cover illustration. The title "${title}" must be clearly written on the image in a fun, bold, legible font. The scene depicts: ${imagePrompt}. The main character in the scene must look like the person in the provided reference image. Style: ${styleDescription}`;
       } else {
-          promptText = `${imagePrompt}. The character in this illustration must look like the person in the provided reference image. Maintain the same facial features, hair, and skin tone. Style: Children's book illustration, vibrant colors, high quality digital art.`;
+          promptText = `${imagePrompt}. The character in this illustration must look like the person in the provided reference image. Maintain the same facial features, hair, and skin tone. Style: ${styleDescription}`;
       }
 
       const parts = [{ text: promptText }];
@@ -830,7 +881,8 @@ export default function App() {
           formData.photoBase64,
           formData.photoMimeType,
           true, // isCover
-          parsedStory.title // Title to render
+          parsedStory.title, // Title to render
+          formData.artStyle // Pass selected style
       );
       setLoadingProgress(45);
 
@@ -846,7 +898,10 @@ export default function App() {
         const imgUrl = await generateImageWithNanoBanana(
           updatedScenes[i].image_prompt, 
           formData.photoBase64, 
-          formData.photoMimeType
+          formData.photoMimeType,
+          false,
+          "",
+          formData.artStyle // Pass selected style
         );
         
         updatedScenes[i].generatedImage = imgUrl;
