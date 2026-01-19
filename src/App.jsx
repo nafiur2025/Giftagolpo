@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Camera, Sparkles, Lock, ArrowRight, User, BookOpen, Star, Menu, X, Download, ShoppingBag, Check, Shuffle, AlertCircle, Heart, Truck, ChevronRight, Upload } from 'lucide-react';
+import { Camera, Sparkles, Lock, ArrowRight, User, BookOpen, Star, Menu, X, Download, ShoppingBag, Check, Shuffle, AlertCircle, Heart, Truck, ChevronRight, Upload, Plus, Trash2, Users } from 'lucide-react';
 
 // --- CONFIGURATION ---
 // PREVIEW MODE: Using hardcoded key for this demo environment.
@@ -183,131 +183,235 @@ const LandingPage = ({ handleStart, view, setView, isSignedIn, formData, handleS
   </div>
 );
 
-const CreatePage = ({ formData, setFormData, handlePhotoUpload, handleAutoGeneratePrompt, handleGenerate, error, view, setView, isSignedIn, handleSignIn }) => (
-  <div className="min-h-screen bg-gray-50">
-    <Header view={view} setView={setView} isSignedIn={isSignedIn} formData={formData} handleSignIn={handleSignIn} />
-    <div className="max-w-md mx-auto p-6">
-      {error && (
-        <div className="bg-red-50 text-red-600 p-4 rounded-xl mb-4 flex items-center gap-2 text-sm">
-          <AlertCircle size={16} /> {error}
-        </div>
-      )}
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold text-gray-900">Who is the hero?</h2>
-        <p className="text-gray-500 text-sm">We'll use this photo to draw the illustrations.</p>
-      </div>
+const CreatePage = ({ formData, setFormData, handlePhotoUpload, handleAutoGeneratePrompt, handleGenerate, error, view, setView, isSignedIn, handleSignIn }) => {
+  const [showSidekickForm, setShowSidekickForm] = useState(false);
+  const [tempSidekick, setTempSidekick] = useState({ name: '', relation: '', photo: null });
 
-      {/* Step 1: Photo Upload (Unified Option) */}
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 mb-6 text-center">
-        {!formData.photo ? (
-          <label 
-            className="flex flex-col items-center justify-center p-8 bg-indigo-50 rounded-xl border-2 border-dashed border-indigo-200 cursor-pointer hover:bg-indigo-100 transition-all active:scale-95"
-          >
-            <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-4 shadow-sm text-indigo-600">
-              <Camera size={32} />
-            </div>
-            <span className="text-sm font-bold text-indigo-700">Tap to Upload Photo</span>
-            <span className="text-xs text-indigo-400 mt-1">Camera or Gallery</span>
-            {/* Use specific MIME types to force Android to show the app chooser
-                instead of defaulting to Google Photos if a default was set for "image/*"
-            */}
-            <input 
-              type="file" 
-              className="hidden" 
-              accept="image/png, image/jpeg, image/jpg, image/webp" 
-              onChange={handlePhotoUpload} 
-              onClick={(e) => { e.target.value = null }} // Reset value to allow re-selecting same file
-            />
-          </label>
-        ) : (
-          <div className="relative inline-block">
-             <div className="w-32 h-32 mx-auto rounded-full overflow-hidden border-4 border-indigo-100 shadow-md">
-                <img src={formData.photo} alt="Preview" className="w-full h-full object-cover" />
-             </div>
-             <button 
-               onClick={() => setFormData({...formData, photo: null, photoBase64: null})}
-               className="absolute bottom-0 right-0 bg-white text-red-500 p-2 rounded-full shadow-lg border border-gray-100 hover:bg-red-50"
-             >
-               <X size={16} />
-             </button>
+  const handleSidekickPhoto = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setTempSidekick({ ...tempSidekick, photo: URL.createObjectURL(file) });
+    }
+  };
+
+  const addSidekick = () => {
+    if (tempSidekick.name && tempSidekick.relation) {
+      setFormData({
+        ...formData,
+        sidekicks: [...(formData.sidekicks || []), tempSidekick]
+      });
+      setTempSidekick({ name: '', relation: '', photo: null });
+      setShowSidekickForm(false);
+    }
+  };
+
+  const removeSidekick = (index) => {
+    const newSidekicks = [...formData.sidekicks];
+    newSidekicks.splice(index, 1);
+    setFormData({ ...formData, sidekicks: newSidekicks });
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Header view={view} setView={setView} isSignedIn={isSignedIn} formData={formData} handleSignIn={handleSignIn} />
+      <div className="max-w-md mx-auto p-6 pb-24">
+        {error && (
+          <div className="bg-red-50 text-red-600 p-4 rounded-xl mb-4 flex items-center gap-2 text-sm">
+            <AlertCircle size={16} /> {error}
           </div>
         )}
-        
-        {!formData.photo && <p className="text-xs text-gray-400 font-medium mt-4">Use clear lighting for best results</p>}
-      </div>
-
-      {/* Step 2: Details */}
-      <div className="space-y-4 mb-8">
-        <div>
-          <label className="block text-sm font-bold text-gray-700 mb-2">Hero's Name</label>
-          <input 
-            type="text" 
-            value={formData.name}
-            onChange={(e) => setFormData({...formData, name: e.target.value})}
-            className="w-full p-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-lg" 
-            placeholder="e.g. Sadia"
-          />
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-gray-900">Who is the hero?</h2>
+          <p className="text-gray-500 text-sm">We'll use this photo to draw the illustrations.</p>
         </div>
-        
-        <div>
-          <label className="block text-sm font-bold text-gray-700 mb-2">Choose an Adventure</label>
-          <div className="grid grid-cols-2 gap-3 mb-4">
-            {THEMES.map((theme) => (
-              <button
-                key={theme.id}
-                onClick={() => setFormData({...formData, theme, customPrompt: ''})}
-                className={`p-4 rounded-xl border text-left transition-all ${
-                  formData.theme.id === theme.id && !formData.customPrompt
-                  ? 'border-indigo-600 bg-indigo-50 ring-1 ring-indigo-600' 
-                  : 'border-gray-200 bg-white hover:border-indigo-300'
-                }`}
-              >
-                <span className="text-2xl mb-2 block">{theme.icon}</span>
-                <span className={`text-sm font-bold ${formData.theme.id === theme.id && !formData.customPrompt ? 'text-indigo-900' : 'text-gray-600'}`}>
-                  {theme.label}
-                </span>
-              </button>
-            ))}
+
+        {/* Step 1: Photo Upload */}
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 mb-6 text-center">
+          {!formData.photo ? (
+            <label 
+              className="flex flex-col items-center justify-center p-8 bg-indigo-50 rounded-xl border-2 border-dashed border-indigo-200 cursor-pointer hover:bg-indigo-100 transition-all active:scale-95"
+            >
+              <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-4 shadow-sm text-indigo-600">
+                <Camera size={32} />
+              </div>
+              <span className="text-sm font-bold text-indigo-700">Tap to Upload Photo</span>
+              <span className="text-xs text-indigo-400 mt-1">Camera or Gallery</span>
+              <input 
+                type="file" 
+                className="hidden" 
+                accept="image/png, image/jpeg, image/jpg, image/webp" 
+                onChange={handlePhotoUpload} 
+                onClick={(e) => { e.target.value = null }} 
+              />
+            </label>
+          ) : (
+            <div className="relative inline-block">
+               <div className="w-32 h-32 mx-auto rounded-full overflow-hidden border-4 border-indigo-100 shadow-md">
+                  <img src={formData.photo} alt="Preview" className="w-full h-full object-cover" />
+               </div>
+               <button 
+                 onClick={() => setFormData({...formData, photo: null, photoBase64: null})}
+                 className="absolute bottom-0 right-0 bg-white text-red-500 p-2 rounded-full shadow-lg border border-gray-100 hover:bg-red-50"
+               >
+                 <X size={16} />
+               </button>
+            </div>
+          )}
+          
+          {!formData.photo && <p className="text-xs text-gray-400 font-medium mt-4">Use clear lighting for best results</p>}
+        </div>
+
+        {/* Step 2: Details */}
+        <div className="space-y-4 mb-8">
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-2">Hero's Name</label>
+            <input 
+              type="text" 
+              value={formData.name}
+              onChange={(e) => setFormData({...formData, name: e.target.value})}
+              className="w-full p-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-lg" 
+              placeholder="e.g. Sadia"
+            />
           </div>
 
-          <div className="relative">
-            <label className="block text-sm font-bold text-gray-700 mb-2 flex justify-between items-center">
-              <span>Or describe your own story...</span>
-              <button 
-                onClick={handleAutoGeneratePrompt} 
-                className="text-xs text-indigo-600 flex items-center gap-1 font-bold hover:bg-indigo-50 px-2 py-1 rounded-md transition-colors"
-              >
-                <Sparkles size={12} /> Auto Generate Idea
-              </button>
-            </label>
-            <textarea
-              value={formData.customPrompt}
-              onChange={(e) => setFormData({...formData, customPrompt: e.target.value})}
-              placeholder="E.g., A magical boat race on the Padma river..."
-              className={`w-full p-4 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm min-h-[100px] transition-colors ${formData.customPrompt ? 'border-indigo-500 ring-1 ring-indigo-500' : 'border-gray-200'}`}
-            />
-            {!formData.customPrompt && (
-              <button 
-                onClick={handleAutoGeneratePrompt}
-                className="absolute bottom-4 right-4 bg-indigo-100 text-indigo-700 p-2 rounded-lg text-xs font-bold hover:bg-indigo-200 transition-colors"
-              >
-                ✨ Surprise Me
-              </button>
+          {/* SIDEKICKS SECTION */}
+          <div>
+            <div className="flex justify-between items-center mb-2">
+              <label className="block text-sm font-bold text-gray-700">Friends & Family (Optional)</label>
+              <span className="text-xs text-gray-400">{formData.sidekicks?.length || 0}/2</span>
+            </div>
+            
+            {/* Added Sidekicks List */}
+            <div className="flex flex-wrap gap-2 mb-3">
+              {formData.sidekicks?.map((sidekick, idx) => (
+                <div key={idx} className="flex items-center gap-2 bg-white border border-gray-200 p-2 pr-3 rounded-full shadow-sm">
+                  <div className="w-8 h-8 rounded-full bg-gray-100 overflow-hidden flex-shrink-0">
+                    {sidekick.photo ? <img src={sidekick.photo} className="w-full h-full object-cover"/> : <User size={16} className="m-auto mt-2 text-gray-400"/>}
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-xs font-bold text-gray-800">{sidekick.name}</span>
+                    <span className="text-[10px] text-gray-500 leading-none">{sidekick.relation}</span>
+                  </div>
+                  <button onClick={() => removeSidekick(idx)} className="ml-1 text-gray-400 hover:text-red-500"><X size={14}/></button>
+                </div>
+              ))}
+              
+              {(!formData.sidekicks || formData.sidekicks.length < 2) && !showSidekickForm && (
+                <button 
+                  onClick={() => setShowSidekickForm(true)}
+                  className="flex items-center gap-1 bg-indigo-50 border border-indigo-100 text-indigo-600 px-3 py-2 rounded-full text-xs font-bold hover:bg-indigo-100 transition-colors"
+                >
+                  <Plus size={14} /> Add Character
+                </button>
+              )}
+            </div>
+
+            {/* Add Sidekick Form */}
+            {showSidekickForm && (
+              <div className="bg-white p-4 rounded-xl border border-indigo-100 shadow-sm animate-in fade-in slide-in-from-top-2">
+                <div className="flex gap-4 mb-3">
+                   <label className="w-16 h-16 bg-gray-50 border-2 border-dashed border-gray-200 rounded-lg flex flex-col items-center justify-center cursor-pointer flex-shrink-0 hover:bg-gray-100">
+                      {tempSidekick.photo ? (
+                        <img src={tempSidekick.photo} className="w-full h-full object-cover rounded-lg" />
+                      ) : (
+                        <>
+                          <Camera size={20} className="text-gray-400" />
+                          <span className="text-[8px] text-gray-400 font-bold mt-1">PHOTO</span>
+                        </>
+                      )}
+                      <input type="file" className="hidden" accept="image/*" onChange={handleSidekickPhoto} />
+                   </label>
+                   <div className="flex-1 space-y-2">
+                      <input 
+                        type="text" 
+                        placeholder="Name (e.g. Raju)" 
+                        value={tempSidekick.name}
+                        onChange={(e) => setTempSidekick({...tempSidekick, name: e.target.value})}
+                        className="w-full p-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-indigo-500"
+                      />
+                      <input 
+                        type="text" 
+                        placeholder="Relation (e.g. Brother)" 
+                        value={tempSidekick.relation}
+                        onChange={(e) => setTempSidekick({...tempSidekick, relation: e.target.value})}
+                        className="w-full p-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-indigo-500"
+                      />
+                   </div>
+                </div>
+                <div className="flex justify-end gap-2">
+                  <button onClick={() => setShowSidekickForm(false)} className="text-xs font-bold text-gray-500 px-3 py-2">Cancel</button>
+                  <button 
+                    onClick={addSidekick}
+                    disabled={!tempSidekick.name || !tempSidekick.relation}
+                    className="bg-indigo-600 text-white text-xs font-bold px-4 py-2 rounded-lg disabled:opacity-50"
+                  >
+                    Add to Story
+                  </button>
+                </div>
+              </div>
             )}
           </div>
-        </div>
-      </div>
+          
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-2">Choose an Adventure</label>
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              {THEMES.map((theme) => (
+                <button
+                  key={theme.id}
+                  onClick={() => setFormData({...formData, theme, customPrompt: ''})}
+                  className={`p-4 rounded-xl border text-left transition-all ${
+                    formData.theme.id === theme.id && !formData.customPrompt
+                    ? 'border-indigo-600 bg-indigo-50 ring-1 ring-indigo-600' 
+                    : 'border-gray-200 bg-white hover:border-indigo-300'
+                  }`}
+                >
+                  <span className="text-2xl mb-2 block">{theme.icon}</span>
+                  <span className={`text-sm font-bold ${formData.theme.id === theme.id && !formData.customPrompt ? 'text-indigo-900' : 'text-gray-600'}`}>
+                    {theme.label}
+                  </span>
+                </button>
+              ))}
+            </div>
 
-      <button 
-        onClick={handleGenerate}
-        disabled={!formData.name}
-        className="w-full bg-indigo-600 disabled:bg-gray-300 text-white py-4 rounded-xl font-bold text-lg shadow-lg flex items-center justify-center gap-2"
-      >
-        <Sparkles size={20} /> Generate Story
-      </button>
+            <div className="relative">
+              <label className="block text-sm font-bold text-gray-700 mb-2 flex justify-between items-center">
+                <span>Or describe your own story...</span>
+                <button 
+                  onClick={handleAutoGeneratePrompt} 
+                  className="text-xs text-indigo-600 flex items-center gap-1 font-bold hover:bg-indigo-50 px-2 py-1 rounded-md transition-colors"
+                >
+                  <Sparkles size={12} /> Auto Generate Idea
+                </button>
+              </label>
+              <textarea
+                value={formData.customPrompt}
+                onChange={(e) => setFormData({...formData, customPrompt: e.target.value})}
+                placeholder="E.g., A magical boat race on the Padma river..."
+                className={`w-full p-4 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm min-h-[100px] transition-colors ${formData.customPrompt ? 'border-indigo-500 ring-1 ring-indigo-500' : 'border-gray-200'}`}
+              />
+              {!formData.customPrompt && (
+                <button 
+                  onClick={handleAutoGeneratePrompt}
+                  className="absolute bottom-4 right-4 bg-indigo-100 text-indigo-700 p-2 rounded-lg text-xs font-bold hover:bg-indigo-200 transition-colors"
+                >
+                  ✨ Surprise Me
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <button 
+          onClick={handleGenerate}
+          disabled={!formData.name}
+          className="w-full bg-indigo-600 disabled:bg-gray-300 text-white py-4 rounded-xl font-bold text-lg shadow-lg flex items-center justify-center gap-2"
+        >
+          <Sparkles size={20} /> Generate Story
+        </button>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const LoadingPage = ({ loadingText, loadingProgress, formData }) => (
   <div className="min-h-screen bg-indigo-900 flex flex-col items-center justify-center p-8 text-center relative overflow-hidden">
@@ -566,6 +670,7 @@ export default function App() {
     photo: null,       // Preview URL
     photoBase64: null, // Raw data for API
     photoMimeType: null,
+    sidekicks: [],     // Added for additional characters
     customPrompt: '' 
   });
   const [isSignedIn, setIsSignedIn] = useState(false);
@@ -654,6 +759,13 @@ export default function App() {
 
     const mainPrompt = formData.customPrompt || formData.theme.prompt;
     
+    // Prepare sidekick info for the prompt
+    let sidekickInstruction = "";
+    if (formData.sidekicks && formData.sidekicks.length > 0) {
+      const sidekickDetails = formData.sidekicks.map(s => `${s.name} (${s.relation})`).join(', ');
+      sidekickInstruction = `Also include the following side characters in the story and image descriptions where appropriate: ${sidekickDetails}. Integrate them meaningfully into the plot dialogue and action.`;
+    }
+
     try {
       // --- Step A: Generate Text ---
       setLoadingText('Writing story text...');
@@ -662,6 +774,7 @@ export default function App() {
       const systemPrompt = `
         You are a professional children's book author. Write a story for a 20-page picture book (10 spreads) for a child named ${formData.name}.
         The story must be about: ${mainPrompt}.
+        ${sidekickInstruction}
         
         Output ONLY valid JSON. Do not include markdown formatting like \`\`\`json.
         Structure:
