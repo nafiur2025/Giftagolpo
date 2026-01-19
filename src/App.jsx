@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Camera, Sparkles, Lock, ArrowRight, User, BookOpen, Star, Menu, X, Download, ShoppingBag, Check, Shuffle, AlertCircle, Heart, Truck, ChevronRight } from 'lucide-react';
+import { Camera, Sparkles, Lock, ArrowRight, User, BookOpen, Star, Menu, X, Download, ShoppingBag, Check, Shuffle, AlertCircle, Heart, Truck, ChevronRight, Upload } from 'lucide-react';
 
 // --- CONFIGURATION ---
 // PREVIEW MODE: Using hardcoded key for this demo environment.
@@ -208,12 +208,15 @@ const CreatePage = ({ formData, setFormData, handlePhotoUpload, handleAutoGenera
             </div>
             <span className="text-sm font-bold text-indigo-700">Tap to Upload Photo</span>
             <span className="text-xs text-indigo-400 mt-1">Camera or Gallery</span>
-            {/* Using a label with hidden input is the most robust mobile pattern */}
+            {/* Use specific MIME types to force Android to show the app chooser
+                instead of defaulting to Google Photos if a default was set for "image/*"
+            */}
             <input 
               type="file" 
               className="hidden" 
-              accept="image/*" 
+              accept="image/png, image/jpeg, image/jpg, image/webp" 
               onChange={handlePhotoUpload} 
+              onClick={(e) => { e.target.value = null }} // Reset value to allow re-selecting same file
             />
           </label>
         ) : (
