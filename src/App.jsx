@@ -5,7 +5,7 @@ import { Camera, Sparkles, Lock, ArrowRight, User, BookOpen, Star, Menu, X, Down
 // PREVIEW MODE: Using hardcoded key for this demo environment.
 // DEPLOYMENT INSTRUCTION: When you deploy to Netlify, replace the line below with:
 // const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || ""; 
+const API_KEY = import.meta.env.VITE_GEMINI_API_KEY; 
 
 const THEMES = [
   { id: 'space', label: 'Space Hero', icon: '🚀', bg: 'from-blue-900 to-black', prompt: "a sci-fi space adventure" },
@@ -50,32 +50,8 @@ export default function App() {
 
   // --- API LOGIC ---
 
-  // Helper: Generate with Imagen 4.0 (Fallback)
-  const generateWithImagenFallback = async (prompt) => {
-    try {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${API_KEY}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            instances: [{ prompt: prompt + ", children's book style, 4k, vibrant" }],
-            parameters: { sampleCount: 1 }
-          })
-        }
-      );
-      if (!response.ok) throw new Error("Imagen Fallback failed");
-      const data = await response.json();
-      const base64 = data.predictions?.[0]?.bytesBase64Encoded;
-      return base64 ? `data:image/png;base64,${base64}` : null;
-    } catch (e) {
-      console.error("Imagen Fallback Error:", e);
-      return null;
-    }
-  };
-
   // 1. Generate Image using Gemini 2.5 Flash Image Preview ("Nano Banana")
-  // Includes robust fallback to Imagen 4.0 if Nano Banana is 404/unavailable
+  // Strictly using Nano Banana with NO fallback to Imagen.
   const generateImageWithNanoBanana = async (imagePrompt, referencePhotoBase64, mimeType, isCover = false, title = "") => {
     if (!API_KEY) {
         setError("Missing API Key. Check your Netlify Environment Variables.");
@@ -103,9 +79,8 @@ export default function App() {
         });
       }
 
-      // ATTEMPT 1: Nano Banana (Gemini 2.5 Flash Image Preview)
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image:generateContent?key=${API_KEY}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent?key=${API_KEY}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -117,8 +92,8 @@ export default function App() {
       );
 
       if (!response.ok) {
-        // Log but don't crash yet - trigger fallback
-        console.warn(`Nano Banana API Error (${response.status}). Switching to fallback.`);
+        const errText = await response.text();
+        console.error(`Nano Banana API Error (${response.status}):`, errText);
         throw new Error(`Primary model failed: ${response.status}`);
       }
 
@@ -130,17 +105,7 @@ export default function App() {
       return `data:image/png;base64,${base64Image}`;
 
     } catch (e) {
-      console.log("Switching to Imagen 4.0 Fallback due to:", e.message);
-      
-      // ATTEMPT 2: Fallback to Imagen 4.0 (Text Only, dropping reference image)
-      const fallbackPrompt = isCover 
-        ? `A children's book cover with the title "${title}" written on it. Scene: ${imagePrompt}. Style: Children's book illustration.`
-        : `${imagePrompt}. Style: Children's book illustration.`;
-        
-      const fallbackImage = await generateWithImagenFallback(fallbackPrompt);
-      
-      if (fallbackImage) return fallbackImage;
-
+      console.error("Image generation error:", e);
       return `https://placehold.co/800x800/e2e8f0/64748b?text=Image+Generation+Failed`; 
     }
   };
