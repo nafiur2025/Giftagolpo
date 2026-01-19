@@ -130,16 +130,16 @@ export default function App() {
       setLoadingProgress(15);
 
       const systemPrompt = `
-        You are a professional children's book author. Write a short 5-page story for a child named ${formData.name}.
+        You are a professional children's book author. Write a story for a 20-page picture book (10 spreads) for a child named ${formData.name}.
         The story must be about: ${mainPrompt}.
         
         Output ONLY valid JSON. Do not include markdown formatting like \`\`\`json.
         Structure:
         {
           "title": "Creative Story Title",
-          "pages": [
-            { "id": 1, "text": "Story text for page 1...", "image_prompt": "Visual description of page 1 scene, cute children's book style illustration, no text in image" },
-            ... up to page 5
+          "scenes": [
+            { "id": 1, "text": "Story text for the left page (approx 2-3 sentences)...", "image_prompt": "Visual description of the right page scene, cute children's book style illustration, no text in image" },
+            ... up to 10 scenes
           ]
         }
         Make the story heartwarming and culturally relevant if the prompt implies it (e.g. Bangladesh context).
@@ -191,28 +191,29 @@ export default function App() {
       );
       setLoadingProgress(45);
 
-      // --- Step C: Generate Pages ---
-      const pagesToPaint = 4;
-      const updatedPages = [...parsedStory.pages];
+      // --- Step C: Generate Spreads (First 3 Spreads only for preview to save time) ---
+      // Although story has 10 scenes, we render images for the first 3 for the free preview
+      const scenesToPaint = 3;
+      const updatedScenes = [...parsedStory.scenes];
 
-      for (let i = 0; i < pagesToPaint && i < updatedPages.length; i++) {
-        setLoadingText(`Painting page ${i + 1} of ${pagesToPaint}...`);
+      for (let i = 0; i < scenesToPaint && i < updatedScenes.length; i++) {
+        setLoadingText(`Painting spread ${i + 1} of ${scenesToPaint} using Nano Banana...`);
         
         // Pass user photo directly to Nano Banana for consistent character generation
         const imgUrl = await generateImageWithNanoBanana(
-          updatedPages[i].image_prompt, 
+          updatedScenes[i].image_prompt, 
           formData.photoBase64, 
           formData.photoMimeType
         );
         
-        updatedPages[i].generatedImage = imgUrl;
+        updatedScenes[i].generatedImage = imgUrl;
         
         // Update progress
-        setLoadingProgress(45 + Math.floor(((i + 1) / pagesToPaint) * 50));
+        setLoadingProgress(45 + Math.floor(((i + 1) / scenesToPaint) * 50));
       }
 
-      // Save final data with cover and pages
-      setStoryData({ ...parsedStory, pages: updatedPages, coverImage: coverUrl });
+      // Save final data with cover and scenes
+      setStoryData({ ...parsedStory, scenes: updatedScenes, coverImage: coverUrl });
       setLoadingText('Finalizing your book...');
       
       setTimeout(() => {
@@ -304,7 +305,7 @@ export default function App() {
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600">Star of the Story</span>.
         </h1>
         <p className="text-lg md:text-xl text-slate-600 mb-8 leading-relaxed max-w-xl mx-auto font-medium">
-          We use magic (AI) to turn a simple photo into a stunning 10-page hardcover adventure. The perfect gift they will cherish forever.
+          We use magic (AI) to turn a simple photo into a stunning 20-page hardcover adventure. The perfect gift they will cherish forever.
         </p>
         
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
@@ -559,8 +560,8 @@ export default function App() {
     // If we have story data, use it. Otherwise fall back to a safe loading state or error.
     if (!storyData) return <div>Loading...</div>;
 
-    const visiblePages = storyData.pages.slice(0, 3); // Page 1, 2, 3
-    const lockedPage = storyData.pages[3]; // Page 4
+    const visibleScenes = storyData.scenes.slice(0, 3); // Spreads 1-3
+    const lockedScene = storyData.scenes[3]; // Spread 4 (Locked)
 
     return (
       <div className="fixed inset-0 bg-slate-900 flex flex-col z-50">
@@ -571,7 +572,7 @@ export default function App() {
           </button>
           <div className="text-center">
             <h3 className="font-bold text-sm tracking-wide">PREVIEW MODE</h3>
-            <p className="text-[10px] text-white/60">Swipe to turn pages</p>
+            <p className="text-[10px] text-white/60">Swipe to flip 2 pages at a time</p>
           </div>
           <div className="w-8"></div> {/* spacer */}
         </div>
@@ -579,80 +580,91 @@ export default function App() {
         {/* Scroll Container (The "Book") */}
         <div className="flex-1 overflow-x-auto snap-x snap-mandatory flex items-center hide-scrollbar">
           
-          {/* 1. COVER PAGE */}
+          {/* 1. COVER PAGE (Single Page on the Right) */}
           <div className="w-full h-full flex-shrink-0 snap-center flex flex-col items-center justify-center p-6 bg-slate-900">
-             <div className="w-full max-w-sm aspect-[3/4] bg-white rounded-r-2xl rounded-l-md shadow-2xl shadow-black overflow-hidden relative border-l-8 border-slate-800">
+             <div className="w-full max-w-sm aspect-[3/4] bg-white rounded-r-2xl rounded-l-md shadow-2xl shadow-black overflow-hidden relative border-l-8 border-slate-800 transform rotate-1">
                 <img 
                   src={storyData.coverImage || "https://placehold.co/800x1200?text=Cover"} 
                   className="w-full h-full object-cover" 
                 />
                 <div className="absolute inset-0 bg-gradient-to-tr from-black/40 via-transparent to-transparent pointer-events-none"></div>
-                {/* Fallback title if image generation didn't include text nicely */}
+                {/* Fallback title */}
                 <div className="absolute bottom-10 left-0 right-0 text-center p-4">
                    <p className="text-white/90 text-sm font-medium drop-shadow-md">A story for {formData.name}</p>
                 </div>
              </div>
              <div className="mt-6 flex items-center gap-2 text-white/50 text-sm animate-pulse">
-               <span>Swipe to open</span> <ArrowRight size={16} />
+               <span>Open Book</span> <ArrowRight size={16} />
              </div>
           </div>
 
-          {/* 2. STORY PAGES (1-3) - Split into Image Page then Text Page */}
-          {visiblePages.map((page, index) => (
-            <React.Fragment key={page.id}>
-              {/* IMAGE PAGE */}
-              <div className="w-full h-full flex-shrink-0 snap-center flex flex-col items-center justify-center bg-[#fdfbf7] p-6 relative">
-                  <div className="w-full max-w-sm aspect-square shadow-lg rounded-md overflow-hidden border-8 border-white bg-white">
-                     {page.generatedImage ? (
-                       <img src={page.generatedImage} className="w-full h-full object-cover" loading="lazy" />
-                     ) : (
-                       <div className="w-full h-full flex items-center justify-center text-gray-300 bg-gray-100">Image Loading...</div>
-                     )}
+          {/* 2. STORY SPREADS (2 Pages at a time: Text Left, Image Right) */}
+          {visibleScenes.map((scene, index) => (
+            <div key={scene.id} className="w-full h-full flex-shrink-0 snap-center flex items-center justify-center p-2 bg-[#1e1e1e]">
+               {/* SPREAD CONTAINER */}
+               <div className="flex w-full max-w-4xl aspect-[3/2] bg-[#fdfbf7] shadow-2xl rounded-sm overflow-hidden border-8 border-[#3e3e3e]">
+                  
+                  {/* LEFT PAGE (Text) */}
+                  <div className="flex-1 p-6 md:p-10 flex flex-col items-center justify-center text-center border-r border-gray-200 relative">
+                      <div className="absolute top-0 bottom-0 right-0 w-8 bg-gradient-to-l from-black/5 to-transparent pointer-events-none"></div> {/* Spine Shadow */}
+                      <span className="text-[8px] md:text-[10px] font-bold text-gray-300 tracking-widest absolute top-4">PAGE {index * 2 + 1}</span>
+                      
+                      <div className="max-w-[90%] overflow-y-auto max-h-full no-scrollbar">
+                        <p className="text-gray-800 font-serif text-sm md:text-lg lg:text-xl leading-relaxed">
+                          {scene.text}
+                        </p>
+                      </div>
+                      
+                      <span className="text-indigo-200 mt-4"><Star size={16} /></span>
                   </div>
-                  <div className="absolute bottom-4 text-gray-300 text-[10px] font-mono">SCENE {index + 1}</div>
-              </div>
 
-              {/* TEXT PAGE */}
-              <div className="w-full h-full flex-shrink-0 snap-center flex flex-col items-center justify-center bg-[#fdfbf7] p-10 relative text-center">
-                  <div className="max-w-xs">
-                    <div className="text-indigo-200 mb-6 flex justify-center"><Star size={24} /></div>
-                    <p className="text-gray-800 font-serif text-xl leading-9 md:text-2xl">
-                      {page.text}
-                    </p>
+                  {/* RIGHT PAGE (Image) */}
+                  <div className="flex-1 bg-white relative overflow-hidden">
+                      <div className="absolute top-0 bottom-0 left-0 w-8 bg-gradient-to-r from-black/10 to-transparent pointer-events-none z-10"></div> {/* Spine Shadow */}
+                      
+                      {scene.generatedImage ? (
+                        <img src={scene.generatedImage} className="w-full h-full object-cover" loading="lazy" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-300 bg-gray-50">Image Loading...</div>
+                      )}
+                      
+                      <span className="text-[8px] md:text-[10px] font-bold text-white/50 tracking-widest absolute bottom-4 right-4 drop-shadow-md">PAGE {index * 2 + 2}</span>
                   </div>
-                  <div className="absolute bottom-4 text-gray-300 text-[10px] font-mono">PAGE {index + 1}</div>
-              </div>
-            </React.Fragment>
+
+               </div>
+            </div>
           ))}
 
-          {/* 3. LOCKED CONTENT (Page 4) */}
-          {lockedPage && (
-            <React.Fragment>
-               {/* LOCKED TEXT PAGE (The Hook) - Visible */}
-               <div className="w-full h-full flex-shrink-0 snap-center flex flex-col items-center justify-center bg-[#fdfbf7] p-10 relative text-center">
-                  <div className="max-w-xs">
-                    <div className="text-indigo-200 mb-6 flex justify-center"><Star size={24} /></div>
-                    <p className="text-gray-800 font-serif text-xl leading-9 md:text-2xl">
-                      {lockedPage.text}
-                    </p>
+          {/* 3. LOCKED SPREAD (Scene 4) */}
+          {lockedScene && (
+            <div className="w-full h-full flex-shrink-0 snap-center flex items-center justify-center p-2 bg-[#1e1e1e]">
+               <div className="flex w-full max-w-4xl aspect-[3/2] bg-[#fdfbf7] shadow-2xl rounded-sm overflow-hidden border-8 border-[#3e3e3e]">
+                  
+                  {/* LEFT PAGE (Visible Hook) */}
+                  <div className="flex-1 p-6 md:p-10 flex flex-col items-center justify-center text-center border-r border-gray-200 relative">
+                      <div className="absolute top-0 bottom-0 right-0 w-8 bg-gradient-to-l from-black/5 to-transparent pointer-events-none"></div>
+                      <span className="text-[8px] md:text-[10px] font-bold text-gray-300 tracking-widest absolute top-4">PAGE 7</span>
+                      
+                      <p className="text-gray-800 font-serif text-sm md:text-lg lg:text-xl leading-relaxed">
+                        {lockedScene.text}
+                      </p>
+                      <p className="text-xs text-indigo-500 mt-4 font-bold animate-pulse">Read the rest of the story...</p>
                   </div>
-                  <div className="absolute bottom-4 text-gray-300 text-[10px] font-mono">PAGE 4</div>
-              </div>
 
-              {/* LOCKED IMAGE PAGE - Blurred */}
-              <div className="w-full h-full flex-shrink-0 snap-center flex flex-col items-center justify-center bg-[#fdfbf7] p-6 relative">
-                  <div className="w-full max-w-sm aspect-square shadow-lg rounded-md overflow-hidden border-8 border-white bg-white relative">
-                     <img 
-                        src={lockedPage.generatedImage || "https://placehold.co/800x800"} 
-                        className="w-full h-full object-cover blur-xl opacity-60 scale-110" 
+                  {/* RIGHT PAGE (Locked Image) */}
+                  <div className="flex-1 bg-gray-200 relative overflow-hidden flex items-center justify-center">
+                      <div className="absolute top-0 bottom-0 left-0 w-8 bg-gradient-to-r from-black/10 to-transparent pointer-events-none z-10"></div>
+                      
+                      <img 
+                        src={lockedScene.generatedImage || "https://placehold.co/800x800"} 
+                        className="w-full h-full object-cover blur-xl opacity-50 scale-110" 
                         loading="lazy" 
-                     />
-                     <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="bg-white/90 backdrop-blur-md p-6 rounded-3xl shadow-xl flex flex-col items-center text-center max-w-[200px]">
-                           <div className="bg-indigo-100 p-4 rounded-full mb-4 text-indigo-600">
-                             <Lock size={28} />
-                           </div>
-                           <h3 className="font-bold text-lg text-slate-900 mb-2">See the Magic!</h3>
+                      />
+                      
+                      <div className="absolute inset-0 flex items-center justify-center p-4">
+                        <div className="bg-white/90 backdrop-blur-md p-6 rounded-2xl shadow-xl flex flex-col items-center text-center w-full max-w-[200px]">
+                           <Lock size={24} className="text-indigo-600 mb-2" />
+                           <h3 className="font-bold text-sm md:text-base text-slate-900 mb-3">The Adventure Continues...</h3>
                            {!isSignedIn ? (
                              <button onClick={handleSignIn} className="w-full bg-indigo-600 text-white py-2 rounded-lg font-bold text-xs shadow-lg hover:bg-indigo-700">
                                Sign In to Unlock
@@ -665,9 +677,9 @@ export default function App() {
                         </div>
                      </div>
                   </div>
-                  <div className="absolute bottom-4 text-gray-300 text-[10px] font-mono">SCENE 4 (LOCKED)</div>
-              </div>
-            </React.Fragment>
+
+               </div>
+            </div>
           )}
 
           {/* 4. UPSELL / FINAL PAGE */}
@@ -679,7 +691,7 @@ export default function App() {
              <div className="relative z-10 max-w-sm w-full">
                 <BookOpen size={48} className="text-white/20 mx-auto mb-6" />
                 <h2 className="text-3xl font-bold text-white mb-2">Love this story?</h2>
-                <p className="text-indigo-200 mb-10">Get the physical hardcover delivered to your doorstep in 5-7 days.</p>
+                <p className="text-indigo-200 mb-10">Get the full 20-page hardcover book delivered to your doorstep.</p>
                 
                 <div className="space-y-3">
                   <button onClick={() => handleBuy('physical')} className="w-full bg-white text-indigo-900 py-4 rounded-xl font-bold text-lg shadow-xl hover:bg-gray-50 flex items-center justify-center gap-3">
