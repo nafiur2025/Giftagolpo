@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Camera, Sparkles, Lock, ArrowRight, User, BookOpen, Star, Menu, X, Download, ShoppingBag, Check, Shuffle, AlertCircle, Heart, Truck } from 'lucide-react';
+import { Camera, Sparkles, Lock, ArrowRight, User, BookOpen, Star, Menu, X, Download, ShoppingBag, Check, Shuffle, AlertCircle, Heart, Truck, ChevronRight } from 'lucide-react';
 
 // --- CONFIGURATION ---
 // PREVIEW MODE: Using hardcoded key for this demo environment.
 // DEPLOYMENT INSTRUCTION: When you deploy to Netlify, replace the line below with:
 // const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-const API_KEY = import.meta.env.VITE_GEMINI_API_KEY; 
+const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
 const THEMES = [
   { id: 'space', label: 'Space Hero', icon: '🚀', bg: 'from-blue-900 to-black', prompt: "a sci-fi space adventure" },
@@ -563,125 +563,130 @@ export default function App() {
     const lockedPage = storyData.pages[3]; // Page 4
 
     return (
-      <div className="min-h-screen bg-gray-100 pb-32">
-        <div className="bg-white shadow-sm p-4 sticky top-0 z-40 flex justify-between items-center">
-          <button onClick={() => setView('landing')} className="p-2 hover:bg-gray-100 rounded-full">
-            <X size={20} className="text-gray-500" />
+      <div className="fixed inset-0 bg-slate-900 flex flex-col z-50">
+        {/* Top Bar */}
+        <div className="bg-slate-900/90 backdrop-blur-sm p-4 flex justify-between items-center text-white z-10">
+          <button onClick={() => setView('landing')} className="p-2 hover:bg-white/10 rounded-full">
+            <X size={24} />
           </button>
-          <h3 className="font-bold text-gray-800 text-sm uppercase tracking-wide">Preview Mode</h3>
+          <div className="text-center">
+            <h3 className="font-bold text-sm tracking-wide">PREVIEW MODE</h3>
+            <p className="text-[10px] text-white/60">Swipe to turn pages</p>
+          </div>
           <div className="w-8"></div> {/* spacer */}
         </div>
 
-        <div className="max-w-md mx-auto p-4 space-y-6">
+        {/* Scroll Container (The "Book") */}
+        <div className="flex-1 overflow-x-auto snap-x snap-mandatory flex items-center hide-scrollbar">
           
-          {/* Cover Mockup - Uses generated Cover Image */}
-          <div className="relative aspect-[1/1] bg-gray-900 rounded-lg shadow-2xl transform hover:scale-[1.01] transition-transform duration-500 overflow-hidden border-r-8 border-gray-800">
-             <img 
-              src={storyData.coverImage || "https://placehold.co/800x800?text=Cover"} 
-              className="w-full h-full object-cover" 
-             />
-             {/* We remove the overlay text since AI now generates it on the image */}
-             <div className="absolute left-0 top-0 bottom-0 w-3 bg-gradient-to-r from-white/20 to-transparent"></div>
+          {/* 1. COVER PAGE */}
+          <div className="w-full h-full flex-shrink-0 snap-center flex flex-col items-center justify-center p-6 bg-slate-900">
+             <div className="w-full max-w-sm aspect-[3/4] bg-white rounded-r-2xl rounded-l-md shadow-2xl shadow-black overflow-hidden relative border-l-8 border-slate-800">
+                <img 
+                  src={storyData.coverImage || "https://placehold.co/800x1200?text=Cover"} 
+                  className="w-full h-full object-cover" 
+                />
+                <div className="absolute inset-0 bg-gradient-to-tr from-black/40 via-transparent to-transparent pointer-events-none"></div>
+                {/* Fallback title if image generation didn't include text nicely */}
+                <div className="absolute bottom-10 left-0 right-0 text-center p-4">
+                   <p className="text-white/90 text-sm font-medium drop-shadow-md">A story for {formData.name}</p>
+                </div>
+             </div>
+             <div className="mt-6 flex items-center gap-2 text-white/50 text-sm animate-pulse">
+               <span>Swipe to open</span> <ArrowRight size={16} />
+             </div>
           </div>
 
-          {/* 3 Visible Pages (Free Preview) */}
+          {/* 2. STORY PAGES (1-3) */}
           {visiblePages.map((page, index) => (
-            <div key={page.id} className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
-              <div className="flex justify-between items-center mb-4">
-                <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded text-[10px] font-bold uppercase">Free Preview</span>
-                <span className="text-gray-400 text-xs font-mono">Page {index + 1}/5</span>
+            <div key={page.id} className="w-full h-full flex-shrink-0 snap-center flex flex-col bg-[#fdfbf7]">
+              {/* Image Area (Top ~55%) */}
+              <div className="h-[55%] w-full bg-slate-100 relative overflow-hidden">
+                 {page.generatedImage ? (
+                   <img src={page.generatedImage} className="w-full h-full object-cover" loading="lazy" />
+                 ) : (
+                   <div className="w-full h-full flex items-center justify-center text-gray-300 bg-gray-100">Image Loading...</div>
+                 )}
+                 <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[#fdfbf7] to-transparent"></div>
               </div>
-              <p className="text-gray-800 font-serif text-lg leading-relaxed mb-4">
-                {page.text}
-              </p>
-              <div className="rounded-lg overflow-hidden bg-gray-100 min-h-[200px]">
-                {page.generatedImage ? (
-                   <img src={page.generatedImage} className="w-full h-auto" loading="lazy" />
-                ) : (
-                  <div className="h-64 flex items-center justify-center text-gray-400">Loading Image...</div>
-                )}
+              
+              {/* Text Area (Bottom ~45%) */}
+              <div className="h-[45%] p-8 flex flex-col items-center text-center justify-center relative">
+                 <span className="absolute top-4 text-xs font-bold text-gray-300 tracking-[0.2em]">PAGE {index + 1}</span>
+                 <p className="text-gray-800 font-serif text-lg leading-loose md:text-xl max-w-md">
+                   {page.text}
+                 </p>
+                 <div className="absolute bottom-6 w-full flex justify-center gap-1">
+                    {/* Pagination Dots */}
+                    {[...Array(5)].map((_, i) => (
+                      <div key={i} className={`w-1.5 h-1.5 rounded-full ${i === index ? 'bg-indigo-600' : 'bg-gray-300'}`}></div>
+                    ))}
+                 </div>
               </div>
             </div>
           ))}
 
-          {/* Page 4 (Locked / Blurred Hook) */}
+          {/* 3. LOCKED PAGE (Page 4) */}
           {lockedPage && (
-            <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200 relative">
-               <div className="flex justify-between items-center mb-4">
-                <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded text-[10px] font-bold uppercase">Locked</span>
-                <span className="text-gray-400 text-xs font-mono">Page 4/5</span>
-              </div>
-              
-              {/* The Text is Visible (Hook) */}
-              <p className="text-gray-800 font-serif text-lg leading-relaxed mb-4">
-                {lockedPage.text}
-              </p>
-
-              {/* The Image is Blurred (The Gate) */}
-              <div className="relative rounded-lg overflow-hidden h-64 bg-gray-100">
-                 {/* Show the real generated image but blurred */}
+            <div className="w-full h-full flex-shrink-0 snap-center flex flex-col bg-[#fdfbf7] relative">
+               <div className="h-[55%] w-full bg-slate-100 relative overflow-hidden">
                  <img 
                     src={lockedPage.generatedImage || "https://placehold.co/800x800"} 
-                    className="w-full h-full object-cover blur-lg opacity-80" 
+                    className="w-full h-full object-cover blur-xl opacity-60 scale-110" 
                     loading="lazy" 
                  />
-                 
-                 {/* Call to Action Overlay */}
-                 {!isSignedIn ? (
-                   <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-10">
-                      <div className="bg-white p-3 rounded-full shadow-lg mb-3">
-                        <Lock className="text-indigo-600" size={24} />
-                      </div>
-                      <h4 className="font-bold text-gray-900 mb-1">Unlock the Ending!</h4>
-                      <p className="text-xs text-gray-600 mb-4">Sign in to see the rest of the story.</p>
-                      <button 
-                        onClick={handleSignIn}
-                        className="bg-indigo-600 text-white px-6 py-2 rounded-full text-sm font-bold shadow-lg hover:bg-indigo-700 w-full"
-                      >
-                        Sign In to Unlock
-                      </button>
-                   </div>
-                 ) : (
-                   <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-white/60 backdrop-blur-sm z-10">
-                      <p className="text-sm font-bold text-gray-800 mb-2">High-Res Image Ready</p>
-                      <button className="text-xs text-indigo-700 underline font-medium">Tap to reveal (simulated)</button>
-                   </div>
-                 )}
-              </div>
+                 <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="bg-white/90 backdrop-blur-md p-6 rounded-3xl shadow-xl flex flex-col items-center text-center max-w-[280px]">
+                       <div className="bg-indigo-100 p-4 rounded-full mb-4 text-indigo-600">
+                         <Lock size={32} />
+                       </div>
+                       <h3 className="font-bold text-xl text-slate-900 mb-2">The Adventure Continues...</h3>
+                       <p className="text-sm text-slate-500 mb-6">Unlock the rest of {formData.name}'s story to see what happens next!</p>
+                       {!isSignedIn ? (
+                         <button onClick={handleSignIn} className="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold text-sm shadow-lg hover:bg-indigo-700">
+                           Sign In to Read Free
+                         </button>
+                       ) : (
+                         <button className="w-full bg-gray-200 text-gray-500 py-3 rounded-xl font-bold text-sm cursor-not-allowed">
+                           Unlocked (Preview)
+                         </button>
+                       )}
+                    </div>
+                 </div>
+               </div>
+               
+               <div className="h-[45%] p-8 flex flex-col items-center text-center justify-center relative filter blur-sm select-none opacity-50">
+                 <p className="text-gray-800 font-serif text-lg leading-loose">
+                   {lockedPage.text}
+                 </p>
+               </div>
             </div>
           )}
 
-          {/* Upsell Section (Always visible at bottom) */}
-          {isSignedIn && (
-             <div className="bg-indigo-50 border border-indigo-100 p-4 rounded-xl text-center mt-8">
-               <h3 className="font-bold text-indigo-900 mb-2">Love the story?</h3>
-               <p className="text-sm text-indigo-700/80 mb-4">Get the full PDF or a printed hardcover book delivered to your door.</p>
-             </div>
-          )}
-        </div>
+          {/* 4. UPSELL / FINAL PAGE */}
+          <div className="w-full h-full flex-shrink-0 snap-center flex flex-col bg-indigo-900 p-8 text-center items-center justify-center relative overflow-hidden">
+             {/* Decorative Circles */}
+             <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-800 rounded-full blur-3xl translate-x-1/3 -translate-y-1/3"></div>
+             <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-900 rounded-full blur-3xl -translate-x-1/3 translate-y-1/3"></div>
 
-        {/* Sticky Footer Bar */}
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-[0_-5px_20px_rgba(0,0,0,0.1)] z-50">
-          <div className="max-w-md mx-auto flex gap-3">
-             {isSignedIn ? (
-               <>
-                 <button onClick={() => handleBuy('digital')} className="flex-1 bg-white border-2 border-indigo-100 text-indigo-700 py-3 rounded-xl font-bold text-sm flex flex-col items-center justify-center gap-0.5 hover:bg-indigo-50">
-                   <span>PDF Only</span>
-                   <span className="text-[10px] opacity-70">৳ 500</span>
-                 </button>
-                 <button onClick={() => handleBuy('physical')} className="flex-[2] bg-indigo-600 text-white py-3 rounded-xl font-bold text-sm flex flex-col items-center justify-center gap-0.5 shadow-lg shadow-indigo-200 hover:bg-indigo-700">
-                    <div className="flex items-center gap-2">
-                       <ShoppingBag size={16} /> <span>Order Print Book</span>
-                    </div>
-                    <span className="text-[10px] opacity-80">৳ 2500 • Free Delivery</span>
-                 </button>
-               </>
-             ) : (
-               <button onClick={handleSignIn} className="w-full bg-indigo-600 text-white py-3.5 rounded-xl font-bold shadow-lg flex items-center justify-center gap-2">
-                 <User size={18} /> Sign In to Save Story
-               </button>
-             )}
+             <div className="relative z-10 max-w-sm w-full">
+                <BookOpen size={48} className="text-white/20 mx-auto mb-6" />
+                <h2 className="text-3xl font-bold text-white mb-2">Love this story?</h2>
+                <p className="text-indigo-200 mb-10">Get the physical hardcover delivered to your doorstep in 5-7 days.</p>
+                
+                <div className="space-y-3">
+                  <button onClick={() => handleBuy('physical')} className="w-full bg-white text-indigo-900 py-4 rounded-xl font-bold text-lg shadow-xl hover:bg-gray-50 flex items-center justify-center gap-3">
+                    <ShoppingBag size={20} /> Order Hardcover <span className="text-sm bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded ml-auto">৳ 2,500</span>
+                  </button>
+                  <button onClick={() => handleBuy('digital')} className="w-full bg-indigo-800 text-white py-4 rounded-xl font-bold text-lg border border-indigo-700 hover:bg-indigo-700 flex items-center justify-center gap-3">
+                    <Download size={20} /> PDF Download <span className="text-sm bg-indigo-900/50 text-indigo-200 px-2 py-0.5 rounded ml-auto">৳ 500</span>
+                  </button>
+                </div>
+                
+                <p className="text-xs text-indigo-400 mt-8">Secure payment via bKash / Nagad</p>
+             </div>
           </div>
+
         </div>
       </div>
     );
