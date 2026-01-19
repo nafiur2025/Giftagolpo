@@ -744,7 +744,7 @@ export default function App() {
       // Select Style Prompt based on user choice
       let styleDescription = "Children's book illustration, vibrant colors, high quality digital art.";
       if (artStyle === 'sketch') {
-        styleDescription = "Hand-drawn pencil sketch, classic storybook style, black and white or muted tones, detailed artistic drawing.";
+        styleDescription = "Hand-drawn colored pencil sketch, classic storybook style, soft vibrant colors, detailed artistic drawing.";
       }
 
       if (isCover) {
