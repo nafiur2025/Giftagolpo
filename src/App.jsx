@@ -185,12 +185,22 @@ const LandingPage = ({ handleStart, view, setView, isSignedIn, formData, handleS
 
 const CreatePage = ({ formData, setFormData, handlePhotoUpload, handleAutoGeneratePrompt, handleGenerate, error, view, setView, isSignedIn, handleSignIn }) => {
   const [showSidekickForm, setShowSidekickForm] = useState(false);
-  const [tempSidekick, setTempSidekick] = useState({ name: '', relation: '', photo: null });
+  const [tempSidekick, setTempSidekick] = useState({ name: '', relation: '', photo: null, photoBase64: null, photoMimeType: null });
 
   const handleSidekickPhoto = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setTempSidekick({ ...tempSidekick, photo: URL.createObjectURL(file) });
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result.split(',')[1];
+        setTempSidekick({ 
+          ...tempSidekick, 
+          photo: URL.createObjectURL(file), 
+          photoBase64: base64String,
+          photoMimeType: file.type
+        });
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -200,7 +210,7 @@ const CreatePage = ({ formData, setFormData, handlePhotoUpload, handleAutoGenera
         ...formData,
         sidekicks: [...(formData.sidekicks || []), tempSidekick]
       });
-      setTempSidekick({ name: '', relation: '', photo: null });
+      setTempSidekick({ name: '', relation: '', photo: null, photoBase64: null, photoMimeType: null });
       setShowSidekickForm(false);
     }
   };
@@ -363,7 +373,7 @@ const CreatePage = ({ formData, setFormData, handlePhotoUpload, handleAutoGenera
                           <span className="text-[8px] text-gray-400 font-bold mt-1">PHOTO</span>
                         </>
                       )}
-                      <input type="file" className="hidden" accept="image/*" onChange={handleSidekickPhoto} />
+                      <input type="file" className="hidden" accept="image/png, image/jpeg, image/jpg, image/webp" onChange={handleSidekickPhoto} />
                    </label>
                    <div className="flex-1 space-y-2">
                       <input 
@@ -732,7 +742,7 @@ export default function App() {
 
   // 1. Generate Image using Gemini 2.5 Flash Image Preview ("Nano Banana")
   // Strictly using Nano Banana with NO fallback to Imagen.
-  const generateImageWithNanoBanana = async (imagePrompt, referencePhotoBase64, mimeType, isCover = false, title = "", artStyle = "vibrant") => {
+  const generateImageWithNanoBanana = async (imagePrompt, referencePhotoBase64, mimeType, isCover = false, title = "", artStyle = "vibrant", sidekicks = []) => {
     if (!API_KEY) {
         setError("Missing API Key. Check your Netlify Environment Variables.");
         return null;
@@ -748,20 +758,40 @@ export default function App() {
       }
 
       if (isCover) {
-          promptText = `A children's book cover illustration. The title "${title}" must be clearly written on the image in a fun, bold, legible font. The scene depicts: ${imagePrompt}. The main character in the scene must look like the person in the provided reference image. Style: ${styleDescription}`;
+          promptText = `A children's book cover illustration. The title "${title}" must be clearly written on the image in a fun, bold, legible font. The scene depicts: ${imagePrompt}. The main character in the scene must look like the person in the provided reference image (Reference Image 1). Style: ${styleDescription}`;
       } else {
-          promptText = `${imagePrompt}. The character in this illustration must look like the person in the provided reference image. Maintain the same facial features, hair, and skin tone. Style: ${styleDescription}`;
+          promptText = `${imagePrompt}. The main character in this illustration must look like Reference Image 1. Maintain the same facial features, hair, and skin tone. Style: ${styleDescription}`;
+          
+          // Add specific sidekick instructions if relevant to the scene
+          // (Basic implementation: always try to map if sidekicks exist, though ideal would be intelligent mapping based on scene text)
+          if (sidekicks && sidekicks.length > 0) {
+             promptText += ` If the text mentions the sidekick(s), use Reference Image 2 (and 3) for their appearance.`;
+          }
       }
 
       const parts = [{ text: promptText }];
       
-      // Add reference image if available
+      // Add reference image if available (Hero is always #1)
       if (referencePhotoBase64 && mimeType) {
         parts.push({
           inlineData: {
             mimeType: mimeType,
             data: referencePhotoBase64
           }
+        });
+      }
+
+      // Add Sidekick images
+      if (sidekicks && sidekicks.length > 0) {
+        sidekicks.forEach((sk) => {
+           if (sk.photoBase64 && sk.photoMimeType) {
+             parts.push({
+                inlineData: {
+                  mimeType: sk.photoMimeType,
+                  data: sk.photoBase64
+                }
+             });
+           }
         });
       }
 
@@ -882,7 +912,8 @@ export default function App() {
           formData.photoMimeType,
           true, // isCover
           parsedStory.title, // Title to render
-          formData.artStyle // Pass selected style
+          formData.artStyle, // Pass selected style
+          formData.sidekicks // Pass sidekicks
       );
       setLoadingProgress(45);
 
@@ -901,7 +932,8 @@ export default function App() {
           formData.photoMimeType,
           false,
           "",
-          formData.artStyle // Pass selected style
+          formData.artStyle, // Pass selected style
+          formData.sidekicks // Pass sidekicks
         );
         
         updatedScenes[i].generatedImage = imgUrl;
