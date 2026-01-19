@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Camera, Sparkles, Lock, ArrowRight, User, BookOpen, Star, Menu, X, Download, ShoppingBag, Check, Shuffle, AlertCircle, Heart, Truck, ChevronRight, Upload } from 'lucide-react';
+import { Camera, Sparkles, Lock, ArrowRight, User, BookOpen, Star, Menu, X, Download, ShoppingBag, Check, Shuffle, AlertCircle, Heart, Truck, ChevronRight } from 'lucide-react';
 
 // --- CONFIGURATION ---
 // PREVIEW MODE: Using hardcoded key for this demo environment.
@@ -200,23 +200,22 @@ const CreatePage = ({ formData, setFormData, handlePhotoUpload, handleAutoGenera
       {/* Step 1: Photo Upload (Unified Option) */}
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 mb-6 text-center">
         {!formData.photo ? (
-          <div 
+          <label 
             className="flex flex-col items-center justify-center p-8 bg-indigo-50 rounded-xl border-2 border-dashed border-indigo-200 cursor-pointer hover:bg-indigo-100 transition-all active:scale-95"
-            onClick={() => document.getElementById('unified-upload').click()}
           >
             <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-4 shadow-sm text-indigo-600">
               <Camera size={32} />
             </div>
             <span className="text-sm font-bold text-indigo-700">Tap to Upload Photo</span>
             <span className="text-xs text-indigo-400 mt-1">Camera or Gallery</span>
+            {/* Using a label with hidden input is the most robust mobile pattern */}
             <input 
               type="file" 
-              id="unified-upload" 
               className="hidden" 
-              accept="image/*" // Allows selection from Camera or Gallery on mobile
+              accept="image/*" 
               onChange={handlePhotoUpload} 
             />
-          </div>
+          </label>
         ) : (
           <div className="relative inline-block">
              <div className="w-32 h-32 mx-auto rounded-full overflow-hidden border-4 border-indigo-100 shadow-md">
