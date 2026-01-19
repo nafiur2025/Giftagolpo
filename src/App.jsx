@@ -627,7 +627,34 @@ const PreviewPage = ({ storyData, formData, isSignedIn, handleSignIn, handleBuy,
            <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-900 rounded-full blur-3xl -translate-x-1/3 translate-y-1/3"></div>
 
            <div className="relative z-10 max-w-sm w-full">
-              <BookOpen size={48} className="text-white/20 mx-auto mb-6" />
+              {/* 3D Standing Book Mockup */}
+              <div className="relative mx-auto mb-8 w-40 aspect-[3/4]" style={{ perspective: '1000px' }}>
+                <div className="w-full h-full relative transition-transform duration-500 hover:scale-105" 
+                     style={{ transform: 'rotateY(-25deg) rotateX(5deg)', transformStyle: 'preserve-3d' }}>
+                    
+                    {/* Book Spine (Left thickness) */}
+                    <div className="absolute left-0 top-0 bottom-0 w-3 bg-indigo-950 transform -translate-x-full origin-right" 
+                         style={{ transform: 'rotateY(-90deg) translateX(50%)' }}></div>
+                    
+                    {/* Front Cover */}
+                    <div className="absolute inset-0 bg-white rounded-r-md shadow-[10px_10px_30px_rgba(0,0,0,0.5)] overflow-hidden border-l border-white/20">
+                       <img 
+                         src={storyData.coverImage || "https://placehold.co/800x1200?text=Cover"} 
+                         className="w-full h-full object-cover" 
+                         alt="Book Cover"
+                       />
+                       {/* Lighting Gradients */}
+                       <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-white/10 pointer-events-none"></div>
+                    </div>
+
+                    {/* Pages (Right thickness) */}
+                    <div className="absolute top-1 bottom-1 right-0 w-2 bg-gray-100 transform translate-x-full" 
+                         style={{ transform: 'rotateY(90deg) translateX(-50%)' }}></div>
+                </div>
+                {/* Drop Shadow */}
+                <div className="absolute -bottom-6 left-4 right-4 h-4 bg-black/50 blur-lg transform skew-x-12"></div>
+              </div>
+
               <h2 className="text-3xl font-bold text-white mb-2">Love this story?</h2>
               <p className="text-indigo-200 mb-10">Get the full 20-page hardcover book delivered to your doorstep.</p>
               
