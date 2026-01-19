@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Camera, Sparkles, Lock, ArrowRight, User, BookOpen, Star, Menu, X, Download, ShoppingBag, Check, Shuffle, AlertCircle, Heart, Truck, ChevronRight } from 'lucide-react';
+import { Camera, Sparkles, Lock, ArrowRight, User, BookOpen, Star, Menu, X, Download, ShoppingBag, Check, Shuffle, AlertCircle, Heart, Truck, ChevronRight, Upload } from 'lucide-react';
 
 // --- CONFIGURATION ---
 // PREVIEW MODE: Using hardcoded key for this demo environment.
@@ -197,20 +197,41 @@ const CreatePage = ({ formData, setFormData, handlePhotoUpload, handleAutoGenera
         <p className="text-gray-500 text-sm">We'll use this photo to draw the illustrations.</p>
       </div>
 
-      {/* Step 1: Photo */}
+      {/* Step 1: Photo Upload (Unified Option) */}
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 mb-6 text-center">
-        <div 
-          className="w-32 h-32 mx-auto bg-indigo-50 rounded-full border-2 border-dashed border-indigo-300 flex items-center justify-center mb-4 overflow-hidden relative cursor-pointer hover:bg-indigo-50 transition-colors"
-          onClick={() => document.getElementById('photo-upload').click()}
-        >
-          {formData.photo ? (
-            <img src={formData.photo} alt="Upload" className="w-full h-full object-cover" />
-          ) : (
-            <Camera className="text-indigo-400 w-10 h-10" />
-          )}
-          <input type="file" id="photo-upload" className="hidden" accept="image/*" onChange={handlePhotoUpload} />
-        </div>
-        <p className="text-xs text-gray-400 font-medium">Tap to upload a clear selfie</p>
+        {!formData.photo ? (
+          <div 
+            className="flex flex-col items-center justify-center p-8 bg-indigo-50 rounded-xl border-2 border-dashed border-indigo-200 cursor-pointer hover:bg-indigo-100 transition-all active:scale-95"
+            onClick={() => document.getElementById('unified-upload').click()}
+          >
+            <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-4 shadow-sm text-indigo-600">
+              <Camera size={32} />
+            </div>
+            <span className="text-sm font-bold text-indigo-700">Tap to Upload Photo</span>
+            <span className="text-xs text-indigo-400 mt-1">Camera or Gallery</span>
+            <input 
+              type="file" 
+              id="unified-upload" 
+              className="hidden" 
+              accept="image/*" // Allows selection from Camera or Gallery on mobile
+              onChange={handlePhotoUpload} 
+            />
+          </div>
+        ) : (
+          <div className="relative inline-block">
+             <div className="w-32 h-32 mx-auto rounded-full overflow-hidden border-4 border-indigo-100 shadow-md">
+                <img src={formData.photo} alt="Preview" className="w-full h-full object-cover" />
+             </div>
+             <button 
+               onClick={() => setFormData({...formData, photo: null, photoBase64: null})}
+               className="absolute bottom-0 right-0 bg-white text-red-500 p-2 rounded-full shadow-lg border border-gray-100 hover:bg-red-50"
+             >
+               <X size={16} />
+             </button>
+          </div>
+        )}
+        
+        {!formData.photo && <p className="text-xs text-gray-400 font-medium mt-4">Use clear lighting for best results</p>}
       </div>
 
       {/* Step 2: Details */}
