@@ -7,6 +7,9 @@ import { Camera, Sparkles, Lock, ArrowRight, User, BookOpen, Star, Menu, X, Down
 // const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY; 
 
+// Fallback image (Base64 gray square) to prevent broken links if API fails/filters content
+const FALLBACK_IMAGE = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+ip1sAAAAASUVORK5CYII=";
+
 const THEMES = [
   { id: 'space', label: 'Space Hero', icon: '🚀', bg: 'from-blue-900 to-black', prompt: "a sci-fi space adventure" },
   { id: 'sundarban', label: 'Sundarbans', icon: '🐯', bg: 'from-green-800 to-green-600', prompt: "a jungle adventure in the Sundarbans with animals" },
@@ -522,8 +525,9 @@ const PreviewPage = ({ storyData, formData, isSignedIn, handleSignIn, handleBuy,
         <div className="w-full h-full flex-shrink-0 snap-center flex flex-col items-center justify-center p-6 bg-slate-900">
            <div className="w-full max-w-sm aspect-[3/4] bg-white rounded-r-2xl rounded-l-md shadow-2xl shadow-black overflow-hidden relative border-l-8 border-slate-800 transform rotate-1">
               <img 
-                src={storyData.coverImage || "https://placehold.co/800x1200?text=Cover"} 
+                src={storyData.coverImage || FALLBACK_IMAGE} 
                 className="w-full h-full object-cover" 
+                onError={(e) => e.target.src = FALLBACK_IMAGE}
               />
               <div className="absolute inset-0 bg-gradient-to-tr from-black/40 via-transparent to-transparent pointer-events-none"></div>
               {/* Fallback title */}
@@ -561,7 +565,12 @@ const PreviewPage = ({ storyData, formData, isSignedIn, handleSignIn, handleBuy,
                     <div className="absolute top-0 bottom-0 left-0 w-8 bg-gradient-to-r from-black/10 to-transparent pointer-events-none z-10"></div> {/* Spine Shadow */}
                     
                     {scene.generatedImage ? (
-                      <img src={scene.generatedImage} className="w-full h-full object-cover" loading="lazy" />
+                      <img 
+                        src={scene.generatedImage} 
+                        className="w-full h-full object-cover" 
+                        loading="lazy" 
+                        onError={(e) => e.target.src = FALLBACK_IMAGE}
+                      />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-gray-300 bg-gray-50">Image Loading...</div>
                     )}
@@ -594,9 +603,10 @@ const PreviewPage = ({ storyData, formData, isSignedIn, handleSignIn, handleBuy,
                     <div className="absolute top-0 bottom-0 left-0 w-8 bg-gradient-to-r from-black/10 to-transparent pointer-events-none z-10"></div>
                     
                     <img 
-                      src={lockedScene.generatedImage || "https://placehold.co/800x800"} 
+                      src={lockedScene.generatedImage || FALLBACK_IMAGE} 
                       className="w-full h-full object-cover blur-xl opacity-50 scale-110" 
                       loading="lazy" 
+                      onError={(e) => e.target.src = FALLBACK_IMAGE}
                     />
                     
                     <div className="absolute inset-0 flex items-center justify-center p-4">
@@ -639,9 +649,10 @@ const PreviewPage = ({ storyData, formData, isSignedIn, handleSignIn, handleBuy,
                     {/* Front Cover */}
                     <div className="absolute inset-0 bg-white rounded-r-md shadow-[10px_10px_30px_rgba(0,0,0,0.5)] overflow-hidden border-l border-white/20">
                        <img 
-                         src={storyData.coverImage || "https://placehold.co/800x1200?text=Cover"} 
+                         src={storyData.coverImage || FALLBACK_IMAGE} 
                          className="w-full h-full object-cover" 
                          alt="Book Cover"
+                         onError={(e) => e.target.src = FALLBACK_IMAGE}
                        />
                        {/* Lighting Gradients */}
                        <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-white/10 pointer-events-none"></div>
@@ -688,7 +699,7 @@ const PaymentPage = ({ storyData, formData, setView }) => (
         {/* Order Summary */}
         <div className="flex gap-4 mb-6 pb-6 border-b border-gray-100">
           <div className="w-16 h-16 bg-gray-200 rounded-lg overflow-hidden">
-            <img src={storyData?.coverImage || "https://placehold.co/600x600"} className="w-full h-full object-cover" />
+            <img src={storyData?.coverImage || FALLBACK_IMAGE} className="w-full h-full object-cover" onError={(e) => e.target.src = FALLBACK_IMAGE} />
           </div>
           <div>
             <h3 className="font-bold text-gray-800 text-sm">Hardcover Storybook</h3>
@@ -849,7 +860,8 @@ export default function App() {
 
     } catch (e) {
       console.error("Image generation error:", e);
-      return `https://placehold.co/800x800/e2e8f0/64748b?text=Image+Generation+Failed`; 
+      // Return local fallback image to avoid broken links
+      return FALLBACK_IMAGE; 
     }
   };
 
