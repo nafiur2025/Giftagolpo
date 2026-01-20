@@ -362,6 +362,38 @@ const LandingPage = ({ handleStart, view, setView, isSignedIn, formData, handleS
             </div>
         </div>
     </div>
+
+    {/* Social Proof / Examples */}
+    <div className="mt-8 px-4 overflow-x-hidden pb-12">
+      <div className="flex items-center justify-center gap-2 mb-8">
+          <div className="h-px bg-gray-200 w-12"></div>
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Recent Magic Created</p>
+          <div className="h-px bg-gray-200 w-12"></div>
+      </div>
+      <div className="flex gap-6 overflow-x-auto pb-8 snap-x px-6 no-scrollbar">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="flex-shrink-0 w-72 bg-white rounded-2xl shadow-lg border border-gray-100 p-4 snap-center hover:scale-[1.02] transition-transform cursor-pointer">
+            <div className="aspect-[4/3] bg-slate-100 rounded-xl mb-4 overflow-hidden relative group">
+              <img src={`https://placehold.co/400x300/indigo/white?text=Story+${i}`} alt="Example" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+              <div className="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition-colors"></div>
+            </div>
+            <div className="px-1">
+              <h3 className="font-bold text-slate-800 text-base mb-1">Rayan's Space Mission</h3>
+              <div className="flex items-center justify-between">
+                  <div className="flex text-yellow-400 text-xs gap-0.5">
+                  <Star size={14} fill="currentColor" />
+                  <Star size={14} fill="currentColor" />
+                  <Star size={14} fill="currentColor" />
+                  <Star size={14} fill="currentColor" />
+                  <Star size={14} fill="currentColor" />
+                  </div>
+                  <span className="text-[10px] text-gray-400 font-medium">2 mins ago</span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
     
     {/* Footer Trust Badges */}
     <div className="text-center pb-12 pt-8 opacity-70 border-t border-gray-100 mt-8">
@@ -1163,7 +1195,7 @@ export default function App() {
 
         if (storyData) {
             const storyRef = doc(collection(db, "users", user.uid, "stories"));
-            let coverUrl = storyData.coverImage;
+            let coverUrl = storyData.coverImage || null;
             
             if (coverUrl && coverUrl.startsWith('data:')) {
                 const coverRef = ref(storage, `stories/${user.uid}/${storyRef.id}/cover.png`);
@@ -1172,7 +1204,7 @@ export default function App() {
             }
 
             const processedScenes = await Promise.all(storyData.scenes.map(async (scene, idx) => {
-                let imgUrl = scene.generatedImage;
+                let imgUrl = scene.generatedImage || null;
                 if (imgUrl && imgUrl.startsWith('data:')) {
                      const imgRef = ref(storage, `stories/${user.uid}/${storyRef.id}/scene_${idx}.png`);
                      await uploadString(imgRef, imgUrl, 'data_url');
@@ -1182,11 +1214,11 @@ export default function App() {
             }));
 
             await setDoc(storyRef, {
-                title: storyData.title,
+                title: storyData.title || "Untitled Story",
                 coverImage: coverUrl,
                 scenes: processedScenes,
                 createdAt: new Date(),
-                heroName: formData.name,
+                heroName: formData.name || "Unknown",
                 status: 'draft'
             });
             
