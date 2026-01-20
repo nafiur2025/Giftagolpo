@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Camera, Sparkles, Lock, ArrowRight, User, BookOpen, Star, Menu, X, Download, ShoppingBag, Check, Shuffle, AlertCircle, Heart, Truck, ChevronRight, Upload, Plus, Trash2, Users, Palette, Phone, Mail, KeyRound } from 'lucide-react';
+import { Camera, Sparkles, Lock, ArrowRight, User, BookOpen, Star, Menu, X, Download, ShoppingBag, Check, Shuffle, AlertCircle, Heart, Truck, ChevronRight, Upload, Plus, Trash2, Users, Palette, Phone, Mail, KeyRound, LogIn } from 'lucide-react';
 
 // --- FIREBASE IMPORTS ---
 // NOTE: You must run `npm install firebase` for these to work.
 import { initializeApp } from "firebase/app";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from "firebase/auth";
-import { getFirestore, doc, setDoc, collection, addDoc, getDoc } from "firebase/firestore";
+import { getFirestore, doc, setDoc, collection, addDoc, getDoc, getDocs, query, orderBy } from "firebase/firestore";
 import { getStorage, ref, uploadString, getDownloadURL } from "firebase/storage";
 
 // --- CONFIGURATION ---
@@ -56,7 +56,7 @@ const AUTO_PROMPTS = [
 
 // --- COMPONENTS ---
 
-const Header = ({ view, setView, isSignedIn, formData, handleSignInClick }) => (
+const Header = ({ view, setView, isSignedIn, formData, handleSignInClick, handleLoginClick }) => (
   <nav className="flex justify-between items-center p-4 bg-white/90 backdrop-blur-md sticky top-0 z-50 border-b border-indigo-50">
     <div className="flex items-center gap-2" onClick={() => setView('landing')}>
       <div className="bg-indigo-600 text-white p-1.5 rounded-lg shadow-sm cursor-pointer">
@@ -64,23 +64,109 @@ const Header = ({ view, setView, isSignedIn, formData, handleSignInClick }) => (
       </div>
       <span className="font-bold text-xl tracking-tight text-indigo-900 cursor-pointer">WonderTale</span>
     </div>
-    {!isSignedIn && view !== 'landing' && (
-      <button onClick={handleSignInClick} className="text-sm font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 px-4 py-2 rounded-full">
-        Sign In
-      </button>
-    )}
-    {isSignedIn && (
-       <div className="flex items-center gap-3">
-         <button onClick={() => setView('my-stories')} className="text-sm font-bold text-indigo-900 hover:text-indigo-700 hidden md:block">
-           My Stories
-         </button>
-         <div className="h-9 w-9 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md border-2 border-white">
-           {formData.name ? formData.name[0] : 'U'}
-         </div>
-       </div>
-    )}
+    
+    <div className="flex items-center gap-3">
+      {!isSignedIn ? (
+        <>
+           <button onClick={handleLoginClick} className="text-sm font-bold text-indigo-900 hover:text-indigo-700 mr-2 hidden md:block">
+            Log In
+          </button>
+          {view !== 'landing' && (
+            <button onClick={handleSignInClick} className="text-sm font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 px-4 py-2 rounded-full">
+              Sign Up
+            </button>
+          )}
+          {view === 'landing' && (
+             <button onClick={handleLoginClick} className="text-sm font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 px-4 py-2 rounded-full md:hidden">
+              Log In
+            </button>
+          )}
+        </>
+      ) : (
+        <div className="flex items-center gap-3">
+          <button onClick={() => setView('my-stories')} className="text-sm font-bold text-indigo-900 hover:text-indigo-700 hidden md:block">
+            My Dashboard
+          </button>
+          <div className="h-9 w-9 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md border-2 border-white cursor-pointer" onClick={() => setView('my-stories')}>
+            {formData.name ? formData.name[0] : 'U'}
+          </div>
+        </div>
+      )}
+    </div>
   </nav>
 );
+
+const LoginModal = ({ isOpen, onClose, onLogin }) => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  if (!isOpen) return null;
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    await onLogin(email, password, (err) => {
+      setLoading(false);
+      if (err) setError(err);
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200">
+      <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
+        <div className="bg-indigo-900 p-6 text-white text-center relative">
+           <button onClick={onClose} className="absolute top-4 right-4 text-white/50 hover:text-white">
+             <X size={20} />
+           </button>
+           <h2 className="text-2xl font-bold mb-1">Welcome Back! 👋</h2>
+           <p className="text-indigo-200 text-sm">Log in to view your saved stories.</p>
+        </div>
+        
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {error && <div className="text-red-500 text-xs text-center font-bold bg-red-50 p-2 rounded">{error}</div>}
+          
+          <div>
+            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Email Address</label>
+            <div className="flex items-center border border-gray-200 rounded-xl px-3 py-3 focus-within:ring-2 focus-within:ring-indigo-500">
+               <Mail size={18} className="text-gray-400 mr-2" />
+               <input 
+                 type="email" 
+                 required
+                 className="w-full outline-none text-sm text-gray-800"
+                 placeholder="name@example.com"
+                 value={email}
+                 onChange={e => setEmail(e.target.value)}
+               />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Password</label>
+            <div className="flex items-center border border-gray-200 rounded-xl px-3 py-3 focus-within:ring-2 focus-within:ring-indigo-500">
+               <KeyRound size={18} className="text-gray-400 mr-2" />
+               <input 
+                 type="password" 
+                 required
+                 className="w-full outline-none text-sm text-gray-800"
+                 placeholder="••••••"
+                 value={password}
+                 onChange={e => setPassword(e.target.value)}
+               />
+            </div>
+          </div>
+
+          <button disabled={loading} type="submit" className="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold shadow-lg hover:bg-indigo-700 transition-transform active:scale-95 mt-4 flex items-center justify-center gap-2">
+            {loading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : <LogIn size={16} />}
+            {loading ? "Logging In..." : "Log In"}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+};
 
 const SignInModal = ({ isOpen, onClose, onComplete }) => {
   const [localData, setLocalData] = useState({ name: '', email: '', mobile: '', password: '' });
@@ -95,7 +181,6 @@ const SignInModal = ({ isOpen, onClose, onComplete }) => {
     setError('');
     
     if (localData.name && localData.email && localData.password) {
-      // Pass data back to main app to handle Firebase logic
       await onComplete(localData, (err) => {
          setLoading(false);
          if (err) setError(err);
@@ -189,9 +274,9 @@ const SignInModal = ({ isOpen, onClose, onComplete }) => {
   );
 };
 
-const LandingPage = ({ handleStart, view, setView, isSignedIn, formData, handleSignInClick }) => (
+const LandingPage = ({ handleStart, view, setView, isSignedIn, formData, handleSignInClick, handleLoginClick }) => (
   <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 pb-20">
-    <Header view={view} setView={setView} isSignedIn={isSignedIn} formData={formData} handleSignInClick={handleSignInClick} />
+    <Header view={view} setView={setView} isSignedIn={isSignedIn} formData={formData} handleSignInClick={handleSignInClick} handleLoginClick={handleLoginClick} />
     
     {/* Hero Section */}
     <div className="px-6 pt-12 pb-16 text-center max-w-3xl mx-auto">
@@ -277,38 +362,6 @@ const LandingPage = ({ handleStart, view, setView, isSignedIn, formData, handleS
             </div>
         </div>
     </div>
-
-    {/* Social Proof / Examples */}
-    <div className="mt-8 px-4 overflow-x-hidden pb-12">
-      <div className="flex items-center justify-center gap-2 mb-8">
-          <div className="h-px bg-gray-200 w-12"></div>
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Recent Magic Created</p>
-          <div className="h-px bg-gray-200 w-12"></div>
-      </div>
-      <div className="flex gap-6 overflow-x-auto pb-8 snap-x px-6 no-scrollbar">
-        {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="flex-shrink-0 w-72 bg-white rounded-2xl shadow-lg border border-gray-100 p-4 snap-center hover:scale-[1.02] transition-transform cursor-pointer">
-            <div className="aspect-[4/3] bg-slate-100 rounded-xl mb-4 overflow-hidden relative group">
-              <img src={`https://placehold.co/400x300/indigo/white?text=Story+${i}`} alt="Example" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-              <div className="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition-colors"></div>
-            </div>
-            <div className="px-1">
-              <h3 className="font-bold text-slate-800 text-base mb-1">Rayan's Space Mission</h3>
-              <div className="flex items-center justify-between">
-                  <div className="flex text-yellow-400 text-xs gap-0.5">
-                  <Star size={14} fill="currentColor" />
-                  <Star size={14} fill="currentColor" />
-                  <Star size={14} fill="currentColor" />
-                  <Star size={14} fill="currentColor" />
-                  <Star size={14} fill="currentColor" />
-                  </div>
-                  <span className="text-[10px] text-gray-400 font-medium">2 mins ago</span>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
     
     {/* Footer Trust Badges */}
     <div className="text-center pb-12 pt-8 opacity-70 border-t border-gray-100 mt-8">
@@ -325,7 +378,7 @@ const LandingPage = ({ handleStart, view, setView, isSignedIn, formData, handleS
   </div>
 );
 
-const CreatePage = ({ formData, setFormData, handlePhotoUpload, handleAutoGeneratePrompt, handleGenerate, error, view, setView, isSignedIn, handleSignInClick }) => {
+const CreatePage = ({ formData, setFormData, handlePhotoUpload, handleAutoGeneratePrompt, handleGenerate, error, view, setView, isSignedIn, handleSignInClick, handleLoginClick }) => {
   const [showSidekickForm, setShowSidekickForm] = useState(false);
   const [tempSidekick, setTempSidekick] = useState({ name: '', relation: '', photo: null, photoBase64: null, photoMimeType: null });
 
@@ -365,7 +418,7 @@ const CreatePage = ({ formData, setFormData, handlePhotoUpload, handleAutoGenera
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header view={view} setView={setView} isSignedIn={isSignedIn} formData={formData} handleSignInClick={handleSignInClick} />
+      <Header view={view} setView={setView} isSignedIn={isSignedIn} formData={formData} handleSignInClick={handleSignInClick} handleLoginClick={handleLoginClick} />
       <div className="max-w-md mx-auto p-6 pb-24">
         {error && (
           <div className="bg-red-50 text-red-600 p-4 rounded-xl mb-4 flex items-center gap-2 text-sm">
@@ -388,9 +441,6 @@ const CreatePage = ({ formData, setFormData, handlePhotoUpload, handleAutoGenera
               </div>
               <span className="text-sm font-bold text-indigo-700">Tap to Upload Photo</span>
               <span className="text-xs text-indigo-400 mt-1">Camera or Gallery</span>
-              {/* Use specific MIME types to force Android to show the app chooser
-                  instead of defaulting to Google Photos if a default was set for "image/*"
-              */}
               <input 
                 type="file" 
                 className="hidden" 
@@ -841,7 +891,7 @@ const MyStoriesPage = ({ savedStories, setView }) => {
         <button onClick={() => setView('landing')} className="text-sm font-medium text-gray-500">Back</button>
       </nav>
       
-      <div className="max-w-md mx-auto p-6">
+      <div className="max-w-4xl mx-auto p-6">
          <h1 className="text-2xl font-bold text-gray-900 mb-6">My Stories</h1>
          
          {savedStories.length === 0 ? (
@@ -850,17 +900,15 @@ const MyStoriesPage = ({ savedStories, setView }) => {
              <p>No stories saved yet.</p>
            </div>
          ) : (
-           <div className="space-y-4">
+           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
              {savedStories.map((story, idx) => (
-               <div key={idx} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex gap-4">
-                  <div className="w-16 h-16 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0">
-                    <img src={story.coverImage} className="w-full h-full object-cover" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-bold text-gray-800 line-clamp-1">{story.title || "Untitled Story"}</h3>
-                    <p className="text-xs text-gray-500 mb-2">{story.scenes.length} Scenes • Created Just Now</p>
-                    <button className="text-xs bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-lg font-bold">
-                      Continue Reading
+               <div key={idx} className="group relative aspect-[3/4] bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden cursor-pointer hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+                  <img src={story.coverImage} className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-4">
+                    <h3 className="font-bold text-white text-sm line-clamp-2 mb-1">{story.title || "Untitled Story"}</h3>
+                    <p className="text-[10px] text-gray-300 mb-3">{story.scenes?.length || 0} Scenes</p>
+                    <button className="w-full bg-white/20 backdrop-blur-sm text-white text-xs py-2 rounded-lg font-bold hover:bg-white/30 transition-colors border border-white/30">
+                      Read Story
                     </button>
                   </div>
                </div>
@@ -892,6 +940,7 @@ export default function App() {
   const [isSignedIn, setIsSignedIn] = useState(false);
   const [userProfile, setUserProfile] = useState(null); // Stores Name/Email/Mobile
   const [showSignInModal, setShowSignInModal] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
   
   // App Logic State
   const [storyData, setStoryData] = useState(null);
@@ -1025,11 +1074,71 @@ export default function App() {
     }
   };
 
-  // --- FIREBASE SAVE LOGIC ---
+  // --- FIREBASE LOGIC ---
   const handleSignInClick = () => setShowSignInModal(true);
+  const handleLoginClick = () => setShowLoginModal(true);
 
+  // Fetch stories for a logged-in user
+  const fetchUserStories = async (userId) => {
+    if (!db) return;
+    try {
+      const q = query(collection(db, "users", userId, "stories"), orderBy("createdAt", "desc"));
+      const querySnapshot = await getDocs(q);
+      const stories = [];
+      querySnapshot.forEach((doc) => {
+        stories.push({ id: doc.id, ...doc.data() });
+      });
+      setSavedStories(stories);
+    } catch (error) {
+      console.error("Error fetching stories:", error);
+    }
+  };
+
+  // Handle Login (Existing User)
+  const handleProcessLogin = async (email, password, doneCallback) => {
+    if (!auth) {
+        // Mock Login for Preview
+        setIsSignedIn(true);
+        setUserProfile({ name: "Demo User", email: email });
+        setShowLoginModal(false);
+        setSavedStories([
+          { id: 1, title: "Ayan's Adventure", coverImage: "https://placehold.co/600x800", scenes: [] },
+          { id: 2, title: "Sarah in Space", coverImage: "https://placehold.co/600x800", scenes: [] }
+        ]); // Mock Data
+        setView('my-stories');
+        doneCallback(null);
+        return;
+    }
+
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      
+      // Get user profile if needed (optional since auth has displayname)
+      // await getDoc(...)
+      
+      setUserProfile({ 
+        name: user.displayName || email.split('@')[0], 
+        email: user.email, 
+        uid: user.uid 
+      });
+      
+      setIsSignedIn(true);
+      setShowLoginModal(false);
+      
+      // Fetch their stories
+      await fetchUserStories(user.uid);
+      setView('my-stories');
+      doneCallback(null);
+      
+    } catch (error) {
+      console.error("Login Error:", error);
+      doneCallback("Invalid email or password.");
+    }
+  };
+
+  // Handle Sign Up (New User + Save Story)
   const handleCompleteSignIn = async (profile, doneCallback) => {
-    // 1. If we are in preview mode (no real firebase), just toggle state
     if (!auth) {
         setUserProfile(profile);
         setIsSignedIn(true);
@@ -1040,14 +1149,11 @@ export default function App() {
     }
 
     try {
-        // 2. Create User
         const userCredential = await createUserWithEmailAndPassword(auth, profile.email, profile.password);
         const user = userCredential.user;
 
-        // 3. Update Auth Profile
         await updateProfile(user, { displayName: profile.name });
 
-        // 4. Save User Data to Firestore
         await setDoc(doc(db, "users", user.uid), {
             name: profile.name,
             email: profile.email,
@@ -1055,19 +1161,16 @@ export default function App() {
             createdAt: new Date()
         });
 
-        // 5. Save Current Story
         if (storyData) {
             const storyRef = doc(collection(db, "users", user.uid, "stories"));
             let coverUrl = storyData.coverImage;
             
-            // Upload Cover if it's base64
             if (coverUrl && coverUrl.startsWith('data:')) {
                 const coverRef = ref(storage, `stories/${user.uid}/${storyRef.id}/cover.png`);
                 await uploadString(coverRef, coverUrl, 'data_url');
                 coverUrl = await getDownloadURL(coverRef);
             }
 
-            // Upload Scene Images
             const processedScenes = await Promise.all(storyData.scenes.map(async (scene, idx) => {
                 let imgUrl = scene.generatedImage;
                 if (imgUrl && imgUrl.startsWith('data:')) {
@@ -1087,8 +1190,8 @@ export default function App() {
                 status: 'draft'
             });
             
-            // Update local state to show "My Stories" immediately
-            setSavedStories(prev => [...prev, { ...storyData, coverImage: coverUrl }]);
+            // Fetch fresh list
+            await fetchUserStories(user.uid);
         }
 
         setUserProfile(profile);
@@ -1113,9 +1216,10 @@ export default function App() {
   return (
     <div className="font-sans text-gray-900 antialiased">
       <SignInModal isOpen={showSignInModal} onClose={() => setShowSignInModal(false)} onComplete={handleCompleteSignIn} />
+      <LoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} onLogin={handleProcessLogin} />
       
-      {view === 'landing' && <LandingPage handleStart={handleStart} view={view} setView={setView} isSignedIn={isSignedIn} formData={formData} handleSignInClick={handleSignInClick} />}
-      {view === 'create' && <CreatePage formData={formData} setFormData={setFormData} handlePhotoUpload={handlePhotoUpload} handleAutoGeneratePrompt={handleAutoGeneratePrompt} handleGenerate={handleGenerate} error={error} view={view} setView={setView} isSignedIn={isSignedIn} handleSignInClick={handleSignInClick} />}
+      {view === 'landing' && <LandingPage handleStart={handleStart} view={view} setView={setView} isSignedIn={isSignedIn} formData={formData} handleSignInClick={handleSignInClick} handleLoginClick={handleLoginClick} />}
+      {view === 'create' && <CreatePage formData={formData} setFormData={setFormData} handlePhotoUpload={handlePhotoUpload} handleAutoGeneratePrompt={handleAutoGeneratePrompt} handleGenerate={handleGenerate} error={error} view={view} setView={setView} isSignedIn={isSignedIn} handleSignInClick={handleSignInClick} handleLoginClick={handleLoginClick} />}
       {view === 'loading' && <LoadingPage loadingText={loadingText} loadingProgress={loadingProgress} formData={formData} />}
       {view === 'preview' && <PreviewPage storyData={storyData} formData={formData} isSignedIn={isSignedIn} handleSignInClick={handleSignInClick} handleBuy={handleBuy} setView={setView} />}
       {view === 'payment' && <PaymentPage storyData={storyData} formData={formData} setView={setView} />}
