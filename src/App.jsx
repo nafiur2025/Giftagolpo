@@ -936,72 +936,71 @@ const ReaderPage = ({ story, setView, handleBuy }) => {
       <div className="flex-1 overflow-x-auto snap-x snap-mandatory flex items-center hide-scrollbar">
         
         {/* 1. COVER PAGE */}
-        <div className="w-full h-full flex-shrink-0 snap-center flex flex-col items-center justify-center p-6 bg-slate-900">
-           <div className="w-full max-w-sm aspect-[3/4] bg-white rounded-r-2xl rounded-l-md shadow-2xl shadow-black overflow-hidden relative border-l-8 border-slate-800 transform rotate-1">
+        <div className="w-full h-full flex-shrink-0 snap-center flex flex-col items-center justify-center p-0 bg-slate-900">
+           <div className="w-full h-full relative">
               <img 
                 src={story.coverImage || FALLBACK_IMAGE} 
-                className="w-full h-full object-cover" 
+                className="w-full h-full object-contain" 
                 onError={(e) => e.target.src = FALLBACK_IMAGE}
               />
-              <div className="absolute inset-0 bg-gradient-to-tr from-black/40 via-transparent to-transparent pointer-events-none"></div>
+              <div className="absolute inset-0 bg-gradient-to-b from-black/60 to-transparent pointer-events-none h-24"></div>
               {/* Fallback title */}
-              <div className="absolute bottom-10 left-0 right-0 text-center p-4">
-                 <p className="text-white/90 text-sm font-medium drop-shadow-md">{story.title}</p>
+              <div className="absolute bottom-10 left-0 right-0 text-center p-4 bg-black/50">
+                 <p className="text-white text-xl font-bold drop-shadow-md">{story.title}</p>
+                 <p className="text-white/80 text-sm mt-2 font-medium">A story for {story.heroName}</p>
               </div>
-           </div>
-           <div className="mt-6 flex items-center gap-2 text-white/50 text-sm animate-pulse">
-             <span>Open Book</span> <ArrowRight size={16} />
            </div>
         </div>
 
-        {/* 2. STORY SPREADS (ALL 10 SCENES) */}
+        {/* 2. STORY PAGES (ALL 10 SCENES - TEXT then IMAGE) */}
         {scenes.map((scene, index) => (
-          <div key={index} className="w-full h-full flex-shrink-0 snap-center flex items-center justify-center p-2 bg-[#1e1e1e]">
-             {/* SPREAD CONTAINER */}
-             <div className="flex w-full max-w-4xl aspect-[3/2] bg-[#fdfbf7] shadow-2xl rounded-sm overflow-hidden border-8 border-[#3e3e3e]">
-                
-                {/* LEFT PAGE (Text) */}
-                <div className="flex-1 p-6 md:p-10 flex flex-col items-center justify-center text-center border-r border-gray-200 relative">
-                    <div className="absolute top-0 bottom-0 right-0 w-8 bg-gradient-to-l from-black/5 to-transparent pointer-events-none"></div>
-                    <span className="text-[8px] md:text-[10px] font-bold text-gray-300 tracking-widest absolute top-4">PAGE {index * 2 + 1}</span>
-                    
-                    <div className="max-w-[90%] overflow-y-auto max-h-full no-scrollbar">
-                      <p className="text-gray-800 font-serif text-sm md:text-lg lg:text-xl leading-relaxed">
-                        {scene.text}
-                      </p>
-                    </div>
-                    
-                    <span className="text-indigo-200 mt-4"><Star size={16} /></span>
+          <React.Fragment key={index}>
+            {/* TEXT PAGE */}
+            <div className="w-full h-full flex-shrink-0 snap-center flex flex-col items-center justify-center bg-[#fdfbf7] p-8 text-center relative border-r border-gray-200">
+                <div className="max-w-md w-full">
+                  <div className="text-indigo-200 mb-8 flex justify-center"><Star size={24} /></div>
+                  <p className="text-gray-800 font-serif text-xl leading-relaxed md:text-2xl">
+                    {scene.text}
+                  </p>
+                  <div className="text-indigo-200 mt-8 flex justify-center"><Star size={24} /></div>
                 </div>
+                <div className="absolute bottom-6 text-gray-400 text-xs font-mono tracking-widest">Page {index * 2 + 1}</div>
+            </div>
 
-                {/* RIGHT PAGE (Image or Placeholder) */}
-                <div className="flex-1 bg-white relative overflow-hidden flex items-center justify-center">
-                    <div className="absolute top-0 bottom-0 left-0 w-8 bg-gradient-to-r from-black/10 to-transparent pointer-events-none z-10"></div>
-                    
-                    {scene.generatedImage ? (
-                      <img 
-                        src={scene.generatedImage} 
-                        className="w-full h-full object-cover" 
-                        loading="lazy" 
-                        onError={(e) => e.target.src = FALLBACK_IMAGE}
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-slate-100 flex flex-col items-center justify-center p-6 text-center">
-                         <div className="bg-indigo-50 p-4 rounded-full mb-3 text-indigo-400">
-                           <Lock size={32} />
-                         </div>
-                         <p className="text-slate-500 font-bold text-sm mb-4">Purchase Book To View Illustration</p>
-                         <button onClick={() => { setView('payment'); handleBuy && handleBuy(); }} className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-xs font-bold shadow-md hover:bg-indigo-700">
-                           Unlock Now
-                         </button>
-                      </div>
-                    )}
-                    
-                    <span className="text-[8px] md:text-[10px] font-bold text-gray-400 tracking-widest absolute bottom-4 right-4 drop-shadow-md">PAGE {index * 2 + 2}</span>
-                </div>
-
-             </div>
-          </div>
+            {/* IMAGE PAGE */}
+            <div className="w-full h-full flex-shrink-0 snap-center relative bg-black">
+                {scene.generatedImage ? (
+                  <img 
+                    src={scene.generatedImage} 
+                    className="w-full h-full object-contain" 
+                    loading="lazy" 
+                    onError={(e) => e.target.src = FALLBACK_IMAGE}
+                  />
+                ) : (
+                  <div className="w-full h-full bg-slate-900 flex flex-col items-center justify-center p-6 text-center relative overflow-hidden">
+                     {/* Blurred background effect */}
+                     <div className="absolute inset-0 bg-[url('https://placehold.co/800x800/1e293b/1e293b')] opacity-50 blur-3xl"></div>
+                     
+                     <div className="relative z-10 bg-white/10 backdrop-blur-md p-8 rounded-3xl shadow-2xl border border-white/20 max-w-xs">
+                       <div className="bg-indigo-500/20 p-4 rounded-full mb-4 inline-flex text-indigo-300 mx-auto">
+                         <Lock size={40} />
+                       </div>
+                       <h3 className="text-white font-bold text-xl mb-2">Illustration Locked</h3>
+                       <p className="text-indigo-200 text-sm mb-6 leading-relaxed">
+                         Purchase the full book to reveal this magical scene and complete the story!
+                       </p>
+                       <button 
+                         onClick={() => { setView('payment'); handleBuy && handleBuy(); }} 
+                         className="w-full bg-indigo-500 text-white px-6 py-3 rounded-xl text-sm font-bold shadow-lg hover:bg-indigo-600 transition-transform active:scale-95 flex items-center justify-center gap-2"
+                       >
+                         Unlock Now <ArrowRight size={16} />
+                       </button>
+                     </div>
+                  </div>
+                )}
+                <div className="absolute bottom-6 right-6 text-white/50 text-xs font-mono tracking-widest drop-shadow-md">Page {index * 2 + 2}</div>
+            </div>
+          </React.Fragment>
         ))}
         
         {/* 3. END PAGE */}
@@ -1025,108 +1024,6 @@ const ReaderPage = ({ story, setView, handleBuy }) => {
     </div>
   );
 };
-
-// --- MY STORIES PAGE (ACCOUNT SPACE) ---
-const MyStoriesPage = ({ savedStories, setView, onReadStory }) => {
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="flex justify-between items-center p-4 bg-white shadow-sm border-b border-gray-100">
-        <div className="flex items-center gap-2 cursor-pointer" onClick={() => setView('landing')}>
-          <BookOpen size={20} className="text-indigo-600" />
-          <span className="font-bold text-indigo-900">WonderTale</span>
-        </div>
-        <button onClick={() => setView('landing')} className="text-sm font-medium text-gray-500">Back</button>
-      </nav>
-      
-      <div className="max-w-4xl mx-auto p-6">
-         <h1 className="text-2xl font-bold text-gray-900 mb-6">My Stories</h1>
-         
-         {savedStories.length === 0 ? (
-           <div className="text-center py-12 text-gray-400">
-             <BookOpen size={48} className="mx-auto mb-4 opacity-20" />
-             <p>No stories saved yet.</p>
-           </div>
-         ) : (
-           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-             {savedStories.map((story, idx) => (
-               <div key={idx} onClick={() => onReadStory(story)} className="group relative aspect-[3/4] bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden cursor-pointer hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-                  <img src={story.coverImage || FALLBACK_IMAGE} className="w-full h-full object-cover" onError={(e) => e.target.src = FALLBACK_IMAGE} />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-4">
-                    <h3 className="font-bold text-white text-sm line-clamp-2 mb-1">{story.title || "Untitled Story"}</h3>
-                    <p className="text-[10px] text-gray-300 mb-3">{story.scenes?.length || 0} Scenes</p>
-                    <button className="w-full bg-white/20 backdrop-blur-sm text-white text-xs py-2 rounded-lg font-bold hover:bg-white/30 transition-colors border border-white/30">
-                      Read Story
-                    </button>
-                  </div>
-               </div>
-             ))}
-           </div>
-         )}
-      </div>
-    </div>
-  );
-};
-
-const PaymentPage = ({ storyData, formData, setView }) => (
-  <div className="min-h-screen bg-gray-50 p-6">
-    <div className="max-w-md mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
-      <div className="bg-indigo-900 p-6 text-white text-center">
-        <h2 className="text-xl font-bold mb-1">Secure Checkout</h2>
-        <p className="text-indigo-200 text-sm">Complete your order</p>
-      </div>
-      
-      <div className="p-6">
-        {/* Order Summary */}
-        <div className="flex gap-4 mb-6 pb-6 border-b border-gray-100">
-          <div className="w-16 h-16 bg-gray-200 rounded-lg overflow-hidden">
-            <img src={storyData?.coverImage || "https://placehold.co/600x600"} className="w-full h-full object-cover" onError={(e) => e.target.src = FALLBACK_IMAGE} />
-          </div>
-          <div>
-            <h3 className="font-bold text-gray-800 text-sm">Hardcover Storybook</h3>
-            <p className="text-xs text-gray-500">Theme: {formData.customPrompt ? 'Custom Adventure' : formData.theme.label}</p>
-            <p className="text-indigo-600 font-bold mt-1">৳ 2,500</p>
-          </div>
-        </div>
-
-        <form className="space-y-4">
-           <div>
-             <label className="text-xs font-bold text-gray-500 uppercase">Delivery Address</label>
-             <input type="text" placeholder="House, Road, Area, City" className="w-full mt-1 p-3 border border-gray-200 rounded-lg text-sm focus:border-indigo-500 outline-none" />
-           </div>
-           
-           <div>
-             <label className="text-xs font-bold text-gray-500 uppercase">Phone Number</label>
-             <input type="tel" placeholder="017..." className="w-full mt-1 p-3 border border-gray-200 rounded-lg text-sm focus:border-indigo-500 outline-none" />
-           </div>
-
-           <div className="pt-4">
-             <label className="text-xs font-bold text-gray-500 uppercase mb-2 block">Payment Method</label>
-             <div className="grid grid-cols-2 gap-3">
-               <div className="border border-pink-500 bg-pink-50 p-3 rounded-lg flex items-center gap-2 cursor-pointer ring-1 ring-pink-500">
-                  <div className="w-4 h-4 rounded-full border-2 border-pink-600 flex items-center justify-center">
-                    <div className="w-2 h-2 bg-pink-600 rounded-full"></div>
-                  </div>
-                  <span className="font-bold text-pink-700 text-sm">bKash</span>
-               </div>
-               <div className="border border-gray-200 p-3 rounded-lg flex items-center gap-2 cursor-pointer hover:border-orange-500">
-                  <div className="w-4 h-4 rounded-full border-2 border-gray-300"></div>
-                  <span className="font-bold text-gray-600 text-sm">Nagad</span>
-               </div>
-             </div>
-           </div>
-        </form>
-        
-        <button onClick={() => alert("Order Placed! (Demo)")} className="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold mt-8 shadow-lg hover:bg-indigo-700">
-          Pay ৳ 2,500
-        </button>
-        
-        <button onClick={() => setView('preview')} className="w-full text-center text-gray-400 text-sm mt-4 hover:text-gray-600">
-          Cancel & Go Back
-        </button>
-      </div>
-    </div>
-  </div>
-);
 
 // --- END COMPONENTS MOVED OUTSIDE ---
 
