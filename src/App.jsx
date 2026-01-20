@@ -36,6 +36,7 @@ try {
 }
 
 const FALLBACK_IMAGE = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+ip1sAAAAASUVORK5CYII=";
+const PURCHASE_PLACEHOLDER = "https://placehold.co/800x800/e2e8f0/64748b?text=Purchase+Book+To+View";
 
 const THEMES = [
   { id: 'space', label: 'Space Hero', icon: '🚀', bg: 'from-blue-900 to-black', prompt: "a sci-fi space adventure" },
@@ -911,8 +912,122 @@ const PreviewPage = ({ storyData, formData, isSignedIn, handleSignInClick, handl
   );
 };
 
+// --- READER PAGE (FULL STORY VIEW) ---
+const ReaderPage = ({ story, setView, handleBuy }) => {
+  if (!story) return <div>Loading...</div>;
+
+  const scenes = story.scenes || [];
+
+  return (
+    <div className="fixed inset-0 bg-slate-900 flex flex-col z-50">
+      {/* Top Bar */}
+      <div className="bg-slate-900/90 backdrop-blur-sm p-4 flex justify-between items-center text-white z-10">
+        <button onClick={() => setView('my-stories')} className="p-2 hover:bg-white/10 rounded-full">
+          <X size={24} />
+        </button>
+        <div className="text-center">
+          <h3 className="font-bold text-sm tracking-wide line-clamp-1 max-w-[200px]">{story.title}</h3>
+          <p className="text-[10px] text-white/60">Swipe to read</p>
+        </div>
+        <div className="w-8"></div>
+      </div>
+
+      {/* Scroll Container (The "Book") */}
+      <div className="flex-1 overflow-x-auto snap-x snap-mandatory flex items-center hide-scrollbar">
+        
+        {/* 1. COVER PAGE */}
+        <div className="w-full h-full flex-shrink-0 snap-center flex flex-col items-center justify-center p-6 bg-slate-900">
+           <div className="w-full max-w-sm aspect-[3/4] bg-white rounded-r-2xl rounded-l-md shadow-2xl shadow-black overflow-hidden relative border-l-8 border-slate-800 transform rotate-1">
+              <img 
+                src={story.coverImage || FALLBACK_IMAGE} 
+                className="w-full h-full object-cover" 
+                onError={(e) => e.target.src = FALLBACK_IMAGE}
+              />
+              <div className="absolute inset-0 bg-gradient-to-tr from-black/40 via-transparent to-transparent pointer-events-none"></div>
+              {/* Fallback title */}
+              <div className="absolute bottom-10 left-0 right-0 text-center p-4">
+                 <p className="text-white/90 text-sm font-medium drop-shadow-md">{story.title}</p>
+              </div>
+           </div>
+           <div className="mt-6 flex items-center gap-2 text-white/50 text-sm animate-pulse">
+             <span>Open Book</span> <ArrowRight size={16} />
+           </div>
+        </div>
+
+        {/* 2. STORY SPREADS (ALL 10 SCENES) */}
+        {scenes.map((scene, index) => (
+          <div key={index} className="w-full h-full flex-shrink-0 snap-center flex items-center justify-center p-2 bg-[#1e1e1e]">
+             {/* SPREAD CONTAINER */}
+             <div className="flex w-full max-w-4xl aspect-[3/2] bg-[#fdfbf7] shadow-2xl rounded-sm overflow-hidden border-8 border-[#3e3e3e]">
+                
+                {/* LEFT PAGE (Text) */}
+                <div className="flex-1 p-6 md:p-10 flex flex-col items-center justify-center text-center border-r border-gray-200 relative">
+                    <div className="absolute top-0 bottom-0 right-0 w-8 bg-gradient-to-l from-black/5 to-transparent pointer-events-none"></div>
+                    <span className="text-[8px] md:text-[10px] font-bold text-gray-300 tracking-widest absolute top-4">PAGE {index * 2 + 1}</span>
+                    
+                    <div className="max-w-[90%] overflow-y-auto max-h-full no-scrollbar">
+                      <p className="text-gray-800 font-serif text-sm md:text-lg lg:text-xl leading-relaxed">
+                        {scene.text}
+                      </p>
+                    </div>
+                    
+                    <span className="text-indigo-200 mt-4"><Star size={16} /></span>
+                </div>
+
+                {/* RIGHT PAGE (Image or Placeholder) */}
+                <div className="flex-1 bg-white relative overflow-hidden flex items-center justify-center">
+                    <div className="absolute top-0 bottom-0 left-0 w-8 bg-gradient-to-r from-black/10 to-transparent pointer-events-none z-10"></div>
+                    
+                    {scene.generatedImage ? (
+                      <img 
+                        src={scene.generatedImage} 
+                        className="w-full h-full object-cover" 
+                        loading="lazy" 
+                        onError={(e) => e.target.src = FALLBACK_IMAGE}
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-slate-100 flex flex-col items-center justify-center p-6 text-center">
+                         <div className="bg-indigo-50 p-4 rounded-full mb-3 text-indigo-400">
+                           <Lock size={32} />
+                         </div>
+                         <p className="text-slate-500 font-bold text-sm mb-4">Purchase Book To View Illustration</p>
+                         <button onClick={() => { setView('payment'); handleBuy && handleBuy(); }} className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-xs font-bold shadow-md hover:bg-indigo-700">
+                           Unlock Now
+                         </button>
+                      </div>
+                    )}
+                    
+                    <span className="text-[8px] md:text-[10px] font-bold text-gray-400 tracking-widest absolute bottom-4 right-4 drop-shadow-md">PAGE {index * 2 + 2}</span>
+                </div>
+
+             </div>
+          </div>
+        ))}
+        
+        {/* 3. END PAGE */}
+         <div className="w-full h-full flex-shrink-0 snap-center flex flex-col bg-indigo-900 p-8 text-center items-center justify-center relative overflow-hidden">
+             {/* Decorative Circles */}
+             <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-800 rounded-full blur-3xl translate-x-1/3 -translate-y-1/3"></div>
+             <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-900 rounded-full blur-3xl -translate-x-1/3 translate-y-1/3"></div>
+
+             <div className="relative z-10 max-w-sm w-full">
+                <BookOpen size={48} className="text-white/20 mx-auto mb-6" />
+                <h2 className="text-3xl font-bold text-white mb-2">The End</h2>
+                <p className="text-indigo-200 mb-10">Hope you enjoyed the adventure!</p>
+                
+                <button onClick={() => setView('my-stories')} className="w-full bg-white text-indigo-900 py-4 rounded-xl font-bold text-lg shadow-xl hover:bg-gray-50">
+                  Back to Dashboard
+                </button>
+             </div>
+          </div>
+
+      </div>
+    </div>
+  );
+};
+
 // --- MY STORIES PAGE (ACCOUNT SPACE) ---
-const MyStoriesPage = ({ savedStories, setView }) => {
+const MyStoriesPage = ({ savedStories, setView, onReadStory }) => {
   return (
     <div className="min-h-screen bg-gray-50">
       <nav className="flex justify-between items-center p-4 bg-white shadow-sm border-b border-gray-100">
@@ -934,8 +1049,8 @@ const MyStoriesPage = ({ savedStories, setView }) => {
          ) : (
            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
              {savedStories.map((story, idx) => (
-               <div key={idx} className="group relative aspect-[3/4] bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden cursor-pointer hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-                  <img src={story.coverImage} className="w-full h-full object-cover" />
+               <div key={idx} onClick={() => onReadStory(story)} className="group relative aspect-[3/4] bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden cursor-pointer hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+                  <img src={story.coverImage || FALLBACK_IMAGE} className="w-full h-full object-cover" onError={(e) => e.target.src = FALLBACK_IMAGE} />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-4">
                     <h3 className="font-bold text-white text-sm line-clamp-2 mb-1">{story.title || "Untitled Story"}</h3>
                     <p className="text-[10px] text-gray-300 mb-3">{story.scenes?.length || 0} Scenes</p>
@@ -952,9 +1067,72 @@ const MyStoriesPage = ({ savedStories, setView }) => {
   );
 };
 
+const PaymentPage = ({ storyData, formData, setView }) => (
+  <div className="min-h-screen bg-gray-50 p-6">
+    <div className="max-w-md mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
+      <div className="bg-indigo-900 p-6 text-white text-center">
+        <h2 className="text-xl font-bold mb-1">Secure Checkout</h2>
+        <p className="text-indigo-200 text-sm">Complete your order</p>
+      </div>
+      
+      <div className="p-6">
+        {/* Order Summary */}
+        <div className="flex gap-4 mb-6 pb-6 border-b border-gray-100">
+          <div className="w-16 h-16 bg-gray-200 rounded-lg overflow-hidden">
+            <img src={storyData?.coverImage || "https://placehold.co/600x600"} className="w-full h-full object-cover" onError={(e) => e.target.src = FALLBACK_IMAGE} />
+          </div>
+          <div>
+            <h3 className="font-bold text-gray-800 text-sm">Hardcover Storybook</h3>
+            <p className="text-xs text-gray-500">Theme: {formData.customPrompt ? 'Custom Adventure' : formData.theme.label}</p>
+            <p className="text-indigo-600 font-bold mt-1">৳ 2,500</p>
+          </div>
+        </div>
+
+        <form className="space-y-4">
+           <div>
+             <label className="text-xs font-bold text-gray-500 uppercase">Delivery Address</label>
+             <input type="text" placeholder="House, Road, Area, City" className="w-full mt-1 p-3 border border-gray-200 rounded-lg text-sm focus:border-indigo-500 outline-none" />
+           </div>
+           
+           <div>
+             <label className="text-xs font-bold text-gray-500 uppercase">Phone Number</label>
+             <input type="tel" placeholder="017..." className="w-full mt-1 p-3 border border-gray-200 rounded-lg text-sm focus:border-indigo-500 outline-none" />
+           </div>
+
+           <div className="pt-4">
+             <label className="text-xs font-bold text-gray-500 uppercase mb-2 block">Payment Method</label>
+             <div className="grid grid-cols-2 gap-3">
+               <div className="border border-pink-500 bg-pink-50 p-3 rounded-lg flex items-center gap-2 cursor-pointer ring-1 ring-pink-500">
+                  <div className="w-4 h-4 rounded-full border-2 border-pink-600 flex items-center justify-center">
+                    <div className="w-2 h-2 bg-pink-600 rounded-full"></div>
+                  </div>
+                  <span className="font-bold text-pink-700 text-sm">bKash</span>
+               </div>
+               <div className="border border-gray-200 p-3 rounded-lg flex items-center gap-2 cursor-pointer hover:border-orange-500">
+                  <div className="w-4 h-4 rounded-full border-2 border-gray-300"></div>
+                  <span className="font-bold text-gray-600 text-sm">Nagad</span>
+               </div>
+             </div>
+           </div>
+        </form>
+        
+        <button onClick={() => alert("Order Placed! (Demo)")} className="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold mt-8 shadow-lg hover:bg-indigo-700">
+          Pay ৳ 2,500
+        </button>
+        
+        <button onClick={() => setView('preview')} className="w-full text-center text-gray-400 text-sm mt-4 hover:text-gray-600">
+          Cancel & Go Back
+        </button>
+      </div>
+    </div>
+  </div>
+);
+
+// --- END COMPONENTS MOVED OUTSIDE ---
+
 export default function App() {
   // Navigation State
-  const [view, setView] = useState('landing'); // landing, create, loading, preview, payment, my-stories
+  const [view, setView] = useState('landing'); // landing, create, loading, preview, reader, payment, my-stories
   
   // User Data State
   const [formData, setFormData] = useState({ 
@@ -977,6 +1155,7 @@ export default function App() {
   // App Logic State
   const [storyData, setStoryData] = useState(null);
   const [savedStories, setSavedStories] = useState([]); // Persistence simulation
+  const [currentReadingStory, setCurrentReadingStory] = useState(null); // Track which story is being read
   const [error, setError] = useState(null);
   
   // UI State
@@ -984,8 +1163,7 @@ export default function App() {
   const [loadingText, setLoadingText] = useState('Initializing...');
 
   // --- API LOGIC (unchanged) ---
-  // ... (keep generateImageWithNanoBanana and generateStoryWithGemini as is from previous version, just ensure they are included)
-  // Re-pasting for completeness in single-file mandate
+  // 1. Generate Image using Gemini 2.5 Flash Image Preview ("Nano Banana")
   const generateImageWithNanoBanana = async (imagePrompt, referencePhotoBase64, mimeType, isCover = false, title = "", artStyle = "vibrant", sidekicks = []) => {
     if (!API_KEY) {
         setError("Missing API Key. Check your Netlify Environment Variables.");
@@ -1077,7 +1255,21 @@ export default function App() {
       if (!rawText) throw new Error("No text returned");
       rawText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
       let parsedStory = JSON.parse(rawText);
-      setStoryData(parsedStory);
+      
+      const generationSnapshot = {
+        heroPhoto: { base64: formData.photoBase64, mime: formData.photoMimeType },
+        sidekicks: formData.sidekicks.map(s => ({
+            name: s.name, 
+            relation: s.relation, 
+            base64: s.photoBase64, 
+            mime: s.photoMimeType 
+        })),
+        artStyle: formData.artStyle,
+        heroName: formData.name,
+        customPrompt: formData.customPrompt
+      };
+
+      setStoryData({ ...parsedStory, generationSnapshot });
       setLoadingProgress(30);
 
       setLoadingText('Designing the cover...');
@@ -1096,7 +1288,7 @@ export default function App() {
         updatedScenes[i].generatedImage = imgUrl;
         setLoadingProgress(45 + Math.floor(((i + 1) / scenesToPaint) * 50));
       }
-      setStoryData({ ...parsedStory, scenes: updatedScenes, coverImage: coverUrl });
+      setStoryData({ ...parsedStory, scenes: updatedScenes, coverImage: coverUrl, generationSnapshot });
       setLoadingText('Finalizing your book...');
       setTimeout(() => { setLoadingProgress(100); setView('preview'); }, 500);
     } catch (err) {
@@ -1129,14 +1321,13 @@ export default function App() {
   // Handle Login (Existing User)
   const handleProcessLogin = async (email, password, doneCallback) => {
     if (!auth) {
-        // Mock Login for Preview
         setIsSignedIn(true);
         setUserProfile({ name: "Demo User", email: email });
         setShowLoginModal(false);
         setSavedStories([
-          { id: 1, title: "Ayan's Adventure", coverImage: "https://placehold.co/600x800", scenes: [] },
+          { id: 1, title: "Ayan's Adventure", coverImage: "https://placehold.co/600x800", scenes: [{text: "Sample", generatedImage: "https://placehold.co/600x600"}] },
           { id: 2, title: "Sarah in Space", coverImage: "https://placehold.co/600x800", scenes: [] }
-        ]); // Mock Data
+        ]); 
         setView('my-stories');
         doneCallback(null);
         return;
@@ -1145,9 +1336,6 @@ export default function App() {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
-      
-      // Get user profile if needed (optional since auth has displayname)
-      // await getDoc(...)
       
       setUserProfile({ 
         name: user.displayName || email.split('@')[0], 
@@ -1158,7 +1346,6 @@ export default function App() {
       setIsSignedIn(true);
       setShowLoginModal(false);
       
-      // Fetch their stories
       await fetchUserStories(user.uid);
       setView('my-stories');
       doneCallback(null);
@@ -1197,6 +1384,38 @@ export default function App() {
             const storyRef = doc(collection(db, "users", user.uid, "stories"));
             let coverUrl = storyData.coverImage || null;
             
+            // Use snapshot data for uploads to ensure consistency
+            const snapshot = storyData.generationSnapshot;
+
+            // Upload Hero Reference Image
+            let heroReferenceUrl = null;
+            if (snapshot && snapshot.heroPhoto && snapshot.heroPhoto.base64) {
+                const heroRef = ref(storage, `stories/${user.uid}/${storyRef.id}/hero_reference`);
+                const mime = snapshot.heroPhoto.mime || 'image/jpeg';
+                await uploadString(heroRef, `data:${mime};base64,${snapshot.heroPhoto.base64}`, 'data_url');
+                heroReferenceUrl = await getDownloadURL(heroRef);
+            }
+
+            // Upload Sidekick Reference Images
+            let savedSidekicks = [];
+            if (snapshot && snapshot.sidekicks) {
+                savedSidekicks = await Promise.all(snapshot.sidekicks.map(async (sk, idx) => {
+                    let skUrl = null;
+                    if (sk.base64) {
+                        const skRef = ref(storage, `stories/${user.uid}/${storyRef.id}/sidekick_${idx}_reference`);
+                        const skMime = sk.mime || 'image/jpeg';
+                        await uploadString(skRef, `data:${skMime};base64,${sk.base64}`, 'data_url');
+                        skUrl = await getDownloadURL(skRef);
+                    }
+                    return {
+                        name: sk.name,
+                        relation: sk.relation,
+                        referenceImage: skUrl
+                    };
+                }));
+            }
+
+            // Upload Cover if it's base64
             if (coverUrl && coverUrl.startsWith('data:')) {
                 const coverRef = ref(storage, `stories/${user.uid}/${storyRef.id}/cover.png`);
                 await uploadString(coverRef, coverUrl, 'data_url');
@@ -1204,7 +1423,7 @@ export default function App() {
             }
 
             const processedScenes = await Promise.all(storyData.scenes.map(async (scene, idx) => {
-                let imgUrl = scene.generatedImage || null;
+                let imgUrl = scene.generatedImage || null; 
                 if (imgUrl && imgUrl.startsWith('data:')) {
                      const imgRef = ref(storage, `stories/${user.uid}/${storyRef.id}/scene_${idx}.png`);
                      await uploadString(imgRef, imgUrl, 'data_url');
@@ -1218,11 +1437,14 @@ export default function App() {
                 coverImage: coverUrl,
                 scenes: processedScenes,
                 createdAt: new Date(),
-                heroName: formData.name || "Unknown",
+                heroName: snapshot ? snapshot.heroName : "Unknown",
+                heroReferenceImage: heroReferenceUrl, 
+                sidekicks: savedSidekicks,
+                artStyle: snapshot ? snapshot.artStyle : "vibrant",
+                customPrompt: snapshot ? snapshot.customPrompt : "",
                 status: 'draft'
             });
             
-            // Fetch fresh list
             await fetchUserStories(user.uid);
         }
 
@@ -1244,6 +1466,12 @@ export default function App() {
   const handleAutoGeneratePrompt = () => setFormData({ ...formData, customPrompt: AUTO_PROMPTS[Math.floor(Math.random() * AUTO_PROMPTS.length)] });
   const handleGenerate = () => { if (!formData.name) return alert("Enter name"); generateStoryWithGemini(); };
   const handleBuy = () => setView('payment');
+  
+  // Handlers for Reader
+  const handleReadStory = (story) => {
+    setCurrentReadingStory(story);
+    setView('reader');
+  };
 
   return (
     <div className="font-sans text-gray-900 antialiased">
@@ -1254,8 +1482,9 @@ export default function App() {
       {view === 'create' && <CreatePage formData={formData} setFormData={setFormData} handlePhotoUpload={handlePhotoUpload} handleAutoGeneratePrompt={handleAutoGeneratePrompt} handleGenerate={handleGenerate} error={error} view={view} setView={setView} isSignedIn={isSignedIn} handleSignInClick={handleSignInClick} handleLoginClick={handleLoginClick} />}
       {view === 'loading' && <LoadingPage loadingText={loadingText} loadingProgress={loadingProgress} formData={formData} />}
       {view === 'preview' && <PreviewPage storyData={storyData} formData={formData} isSignedIn={isSignedIn} handleSignInClick={handleSignInClick} handleBuy={handleBuy} setView={setView} />}
-      {view === 'payment' && <PaymentPage storyData={storyData} formData={formData} setView={setView} />}
-      {view === 'my-stories' && <MyStoriesPage savedStories={savedStories} setView={setView} />}
+      {view === 'reader' && <ReaderPage story={currentReadingStory} setView={setView} handleBuy={handleBuy} />}
+      {view === 'payment' && <PaymentPage storyData={storyData || currentReadingStory} formData={formData} setView={setView} />}
+      {view === 'my-stories' && <MyStoriesPage savedStories={savedStories} setView={setView} onReadStory={handleReadStory} />}
     </div>
   );
 }
