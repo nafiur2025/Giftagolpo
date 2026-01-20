@@ -1025,11 +1025,50 @@ const ReaderPage = ({ story, setView, handleBuy }) => {
   );
 };
 
-// --- END COMPONENTS MOVED OUTSIDE ---
+// --- MY STORIES PAGE (ACCOUNT SPACE) ---
+const MyStoriesPage = ({ savedStories, setView, onReadStory }) => { // Destructure onReadStory
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <nav className="flex justify-between items-center p-4 bg-white shadow-sm border-b border-gray-100">
+        <div className="flex items-center gap-2 cursor-pointer" onClick={() => setView('landing')}>
+          <BookOpen size={20} className="text-indigo-600" />
+          <span className="font-bold text-indigo-900">WonderTale</span>
+        </div>
+        <button onClick={() => setView('landing')} className="text-sm font-medium text-gray-500">Back</button>
+      </nav>
+      
+      <div className="max-w-4xl mx-auto p-6">
+         <h1 className="text-2xl font-bold text-gray-900 mb-6">My Stories</h1>
+         
+         {savedStories.length === 0 ? (
+           <div className="text-center py-12 text-gray-400">
+             <BookOpen size={48} className="mx-auto mb-4 opacity-20" />
+             <p>No stories saved yet.</p>
+           </div>
+         ) : (
+           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+             {savedStories.map((story, idx) => (
+               <div key={idx} onClick={() => onReadStory(story)} className="group relative aspect-[3/4] bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden cursor-pointer hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+                  <img src={story.coverImage} className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-4">
+                    <h3 className="font-bold text-white text-sm line-clamp-2 mb-1">{story.title || "Untitled Story"}</h3>
+                    <p className="text-[10px] text-gray-300 mb-3">{story.scenes?.length || 0} Scenes</p>
+                    <button className="w-full bg-white/20 backdrop-blur-sm text-white text-xs py-2 rounded-lg font-bold hover:bg-white/30 transition-colors border border-white/30">
+                      Read Story
+                    </button>
+                  </div>
+               </div>
+             ))}
+           </div>
+         )}
+      </div>
+    </div>
+  );
+};
 
 export default function App() {
   // Navigation State
-  const [view, setView] = useState('landing'); // landing, create, loading, preview, reader, payment, my-stories
+  const [view, setView] = useState('landing'); // landing, create, loading, preview, payment, my-stories
   
   // User Data State
   const [formData, setFormData] = useState({ 
@@ -1060,7 +1099,8 @@ export default function App() {
   const [loadingText, setLoadingText] = useState('Initializing...');
 
   // --- API LOGIC (unchanged) ---
-  // 1. Generate Image using Gemini 2.5 Flash Image Preview ("Nano Banana")
+  // ... (keep generateImageWithNanoBanana and generateStoryWithGemini as is from previous version, just ensure they are included)
+  // Re-pasting for completeness in single-file mandate
   const generateImageWithNanoBanana = async (imagePrompt, referencePhotoBase64, mimeType, isCover = false, title = "", artStyle = "vibrant", sidekicks = []) => {
     if (!API_KEY) {
         setError("Missing API Key. Check your Netlify Environment Variables.");
