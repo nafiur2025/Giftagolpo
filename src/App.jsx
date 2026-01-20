@@ -722,7 +722,7 @@ const LoadingPage = ({ loadingText, loadingProgress, formData }) => (
   </div>
 );
 
-const PreviewPage = ({ storyData, formData, isSignedIn, handleSignInClick, handleBuy, setView }) => {
+const PreviewPage = ({ storyData, formData, isSignedIn, handleSignInClick, handleLoginClick, handleBuy, setView }) => {
   // If we have story data, use it. Otherwise fall back to a safe loading state or error.
   if (!storyData) return <div>Loading...</div>;
 
@@ -839,9 +839,14 @@ const PreviewPage = ({ storyData, formData, isSignedIn, handleSignInClick, handl
                          <Lock size={24} className="text-indigo-600 mb-2" />
                          <h3 className="font-bold text-sm md:text-base text-slate-900 mb-3">The Adventure Continues...</h3>
                          {!isSignedIn ? (
-                           <button onClick={handleSignInClick} className="w-full bg-indigo-600 text-white py-2 rounded-lg font-bold text-xs shadow-lg hover:bg-indigo-700">
-                             Sign In to Unlock
-                           </button>
+                           <>
+                              <button onClick={handleSignInClick} className="w-full bg-indigo-600 text-white py-2 rounded-lg font-bold text-xs shadow-lg hover:bg-indigo-700 mb-2">
+                                Sign In to Unlock
+                              </button>
+                              <p className="text-[10px] text-slate-500">
+                                Already have an account? <button onClick={handleLoginClick} className="text-indigo-600 font-bold hover:underline">Log In</button>
+                              </p>
+                           </>
                          ) : (
                            <button className="w-full bg-gray-200 text-gray-500 py-2 rounded-lg font-bold text-xs cursor-not-allowed">
                              Unlocked (Preview)
@@ -912,7 +917,7 @@ const PreviewPage = ({ storyData, formData, isSignedIn, handleSignInClick, handl
   );
 };
 
-// --- READER PAGE (FULL STORY VIEW) ---
+// --- READER PAGE (FULL STORY VIEW - MOBILE OPTIMIZED) ---
 const ReaderPage = ({ story, setView, handleBuy }) => {
   if (!story) return <div>Loading...</div>;
 
@@ -932,7 +937,7 @@ const ReaderPage = ({ story, setView, handleBuy }) => {
         <div className="w-8"></div>
       </div>
 
-      {/* Scroll Container (The "Book") */}
+      {/* Scroll Container (The "Book" - Mobile Optimized Vertical/Horizontal Mix) */}
       <div className="flex-1 overflow-x-auto snap-x snap-mandatory flex items-center hide-scrollbar">
         
         {/* 1. COVER PAGE */}
@@ -944,10 +949,12 @@ const ReaderPage = ({ story, setView, handleBuy }) => {
                 onError={(e) => e.target.src = FALLBACK_IMAGE}
               />
               <div className="absolute inset-0 bg-gradient-to-b from-black/60 to-transparent pointer-events-none h-24"></div>
-              {/* Fallback title */}
               <div className="absolute bottom-10 left-0 right-0 text-center p-4 bg-black/50">
                  <p className="text-white text-xl font-bold drop-shadow-md">{story.title}</p>
                  <p className="text-white/80 text-sm mt-2 font-medium">A story for {story.heroName}</p>
+                 <div className="mt-4 animate-pulse flex justify-center text-white/60 text-xs">
+                   <span>Swipe to begin</span> <ChevronRight size={14} />
+                 </div>
               </div>
            </div>
         </div>
@@ -957,7 +964,7 @@ const ReaderPage = ({ story, setView, handleBuy }) => {
           <React.Fragment key={index}>
             {/* TEXT PAGE */}
             <div className="w-full h-full flex-shrink-0 snap-center flex flex-col items-center justify-center bg-[#fdfbf7] p-8 text-center relative border-r border-gray-200">
-                <div className="max-w-md w-full">
+                <div className="max-w-md w-full flex flex-col justify-center h-full">
                   <div className="text-indigo-200 mb-8 flex justify-center"><Star size={24} /></div>
                   <p className="text-gray-800 font-serif text-xl leading-relaxed md:text-2xl">
                     {scene.text}
@@ -1068,7 +1075,7 @@ const MyStoriesPage = ({ savedStories, setView, onReadStory }) => { // Destructu
 
 export default function App() {
   // Navigation State
-  const [view, setView] = useState('landing'); // landing, create, loading, preview, payment, my-stories
+  const [view, setView] = useState('landing'); // landing, create, loading, preview, reader, payment, my-stories
   
   // User Data State
   const [formData, setFormData] = useState({ 
@@ -1235,7 +1242,72 @@ export default function App() {
     }
   };
 
-  // --- FIREBASE LOGIC ---
+  // --- FIREBASE SAVE LOGIC ---
+  const saveCurrentStory = async (user, currentStoryData, currentFormData) => {
+    if (!currentStoryData) return;
+    
+    const storyRef = doc(collection(db, "users", user.uid, "stories"));
+    let coverUrl = currentStoryData.coverImage || null;
+    
+    if (coverUrl && coverUrl.startsWith('data:')) {
+        const coverRef = ref(storage, `stories/${user.uid}/${storyRef.id}/cover.png`);
+        await uploadString(coverRef, coverUrl, 'data_url');
+        coverUrl = await getDownloadURL(coverRef);
+    }
+
+    const snapshot = currentStoryData.generationSnapshot;
+    let heroReferenceUrl = null;
+    if (snapshot && snapshot.heroPhoto && snapshot.heroPhoto.base64) {
+        const heroRef = ref(storage, `stories/${user.uid}/${storyRef.id}/hero_reference`);
+        const mime = snapshot.heroPhoto.mime || 'image/jpeg';
+        await uploadString(heroRef, `data:${mime};base64,${snapshot.heroPhoto.base64}`, 'data_url');
+        heroReferenceUrl = await getDownloadURL(heroRef);
+    }
+
+    let savedSidekicks = [];
+    if (snapshot && snapshot.sidekicks) {
+        savedSidekicks = await Promise.all(snapshot.sidekicks.map(async (sk, idx) => {
+            let skUrl = null;
+            if (sk.base64) {
+                const skRef = ref(storage, `stories/${user.uid}/${storyRef.id}/sidekick_${idx}_reference`);
+                const skMime = sk.mime || 'image/jpeg';
+                await uploadString(skRef, `data:${skMime};base64,${sk.base64}`, 'data_url');
+                skUrl = await getDownloadURL(skRef);
+            }
+            return {
+                name: sk.name,
+                relation: sk.relation,
+                referenceImage: skUrl
+            };
+        }));
+    }
+
+    const processedScenes = await Promise.all(currentStoryData.scenes.map(async (scene, idx) => {
+        let imgUrl = scene.generatedImage || null;
+        if (imgUrl && imgUrl.startsWith('data:')) {
+             const imgRef = ref(storage, `stories/${user.uid}/${storyRef.id}/scene_${idx}.png`);
+             await uploadString(imgRef, imgUrl, 'data_url');
+             imgUrl = await getDownloadURL(imgRef);
+        }
+        return { ...scene, generatedImage: imgUrl };
+    }));
+
+    await setDoc(storyRef, {
+        title: currentStoryData.title || "Untitled Story",
+        coverImage: coverUrl,
+        scenes: processedScenes,
+        createdAt: new Date(),
+        heroName: snapshot ? snapshot.heroName : "Unknown",
+        heroReferenceImage: heroReferenceUrl, 
+        sidekicks: savedSidekicks,
+        artStyle: snapshot ? snapshot.artStyle : "vibrant",
+        customPrompt: snapshot ? snapshot.customPrompt : "",
+        status: 'draft'
+    });
+    
+    await fetchUserStories(user.uid);
+  };
+
   const handleSignInClick = () => setShowSignInModal(true);
   const handleLoginClick = () => setShowLoginModal(true);
 
@@ -1283,6 +1355,12 @@ export default function App() {
       setIsSignedIn(true);
       setShowLoginModal(false);
       
+      // If we have a pending story in state, save it now
+      if (storyData) {
+         await saveCurrentStory(user, storyData, formData);
+         alert("Story saved to your account!");
+      }
+      
       await fetchUserStories(user.uid);
       setView('my-stories');
       doneCallback(null);
@@ -1318,71 +1396,7 @@ export default function App() {
         });
 
         if (storyData) {
-            const storyRef = doc(collection(db, "users", user.uid, "stories"));
-            let coverUrl = storyData.coverImage || null;
-            
-            // Use snapshot data for uploads to ensure consistency
-            const snapshot = storyData.generationSnapshot;
-
-            // Upload Hero Reference Image
-            let heroReferenceUrl = null;
-            if (snapshot && snapshot.heroPhoto && snapshot.heroPhoto.base64) {
-                const heroRef = ref(storage, `stories/${user.uid}/${storyRef.id}/hero_reference`);
-                const mime = snapshot.heroPhoto.mime || 'image/jpeg';
-                await uploadString(heroRef, `data:${mime};base64,${snapshot.heroPhoto.base64}`, 'data_url');
-                heroReferenceUrl = await getDownloadURL(heroRef);
-            }
-
-            // Upload Sidekick Reference Images
-            let savedSidekicks = [];
-            if (snapshot && snapshot.sidekicks) {
-                savedSidekicks = await Promise.all(snapshot.sidekicks.map(async (sk, idx) => {
-                    let skUrl = null;
-                    if (sk.base64) {
-                        const skRef = ref(storage, `stories/${user.uid}/${storyRef.id}/sidekick_${idx}_reference`);
-                        const skMime = sk.mime || 'image/jpeg';
-                        await uploadString(skRef, `data:${skMime};base64,${sk.base64}`, 'data_url');
-                        skUrl = await getDownloadURL(skRef);
-                    }
-                    return {
-                        name: sk.name,
-                        relation: sk.relation,
-                        referenceImage: skUrl
-                    };
-                }));
-            }
-
-            // Upload Cover if it's base64
-            if (coverUrl && coverUrl.startsWith('data:')) {
-                const coverRef = ref(storage, `stories/${user.uid}/${storyRef.id}/cover.png`);
-                await uploadString(coverRef, coverUrl, 'data_url');
-                coverUrl = await getDownloadURL(coverRef);
-            }
-
-            const processedScenes = await Promise.all(storyData.scenes.map(async (scene, idx) => {
-                let imgUrl = scene.generatedImage || null; 
-                if (imgUrl && imgUrl.startsWith('data:')) {
-                     const imgRef = ref(storage, `stories/${user.uid}/${storyRef.id}/scene_${idx}.png`);
-                     await uploadString(imgRef, imgUrl, 'data_url');
-                     imgUrl = await getDownloadURL(imgRef);
-                }
-                return { ...scene, generatedImage: imgUrl };
-            }));
-
-            await setDoc(storyRef, {
-                title: storyData.title || "Untitled Story",
-                coverImage: coverUrl,
-                scenes: processedScenes,
-                createdAt: new Date(),
-                heroName: snapshot ? snapshot.heroName : "Unknown",
-                heroReferenceImage: heroReferenceUrl, 
-                sidekicks: savedSidekicks,
-                artStyle: snapshot ? snapshot.artStyle : "vibrant",
-                customPrompt: snapshot ? snapshot.customPrompt : "",
-                status: 'draft'
-            });
-            
-            await fetchUserStories(user.uid);
+            await saveCurrentStory(user, storyData, formData);
         }
 
         setUserProfile(profile);
@@ -1418,7 +1432,7 @@ export default function App() {
       {view === 'landing' && <LandingPage handleStart={handleStart} view={view} setView={setView} isSignedIn={isSignedIn} formData={formData} handleSignInClick={handleSignInClick} handleLoginClick={handleLoginClick} />}
       {view === 'create' && <CreatePage formData={formData} setFormData={setFormData} handlePhotoUpload={handlePhotoUpload} handleAutoGeneratePrompt={handleAutoGeneratePrompt} handleGenerate={handleGenerate} error={error} view={view} setView={setView} isSignedIn={isSignedIn} handleSignInClick={handleSignInClick} handleLoginClick={handleLoginClick} />}
       {view === 'loading' && <LoadingPage loadingText={loadingText} loadingProgress={loadingProgress} formData={formData} />}
-      {view === 'preview' && <PreviewPage storyData={storyData} formData={formData} isSignedIn={isSignedIn} handleSignInClick={handleSignInClick} handleBuy={handleBuy} setView={setView} />}
+      {view === 'preview' && <PreviewPage storyData={storyData} formData={formData} isSignedIn={isSignedIn} handleSignInClick={handleSignInClick} handleLoginClick={handleLoginClick} handleBuy={handleBuy} setView={setView} />}
       {view === 'reader' && <ReaderPage story={currentReadingStory} setView={setView} handleBuy={handleBuy} />}
       {view === 'payment' && <PaymentPage storyData={storyData || currentReadingStory} formData={formData} setView={setView} />}
       {view === 'my-stories' && <MyStoriesPage savedStories={savedStories} setView={setView} onReadStory={handleReadStory} />}
