@@ -796,9 +796,9 @@ export default function App() {
       }
 
       if (isCover) {
-          promptText = `A children's book cover illustration. The title "${title}" must be clearly written on the image in a fun, bold, legible font. The scene depicts: ${imagePrompt}. The main character in the scene must look like the person in the provided reference image (Reference Image 1). Style: ${styleDescription}`;
+          promptText = `A children's book cover illustration. The title "${title}" must be clearly written on the image in a fun, bold, legible font. The scene depicts: ${imagePrompt}. The main character in the scene must look like the person in the provided reference image (Reference Image 1). Do not include any sidekicks on the cover. Style: ${styleDescription}`;
       } else {
-          promptText = `${imagePrompt}. The main character in this illustration must look like Reference Image 1. Maintain the same facial features, hair, and skin tone. Style: ${styleDescription}`;
+          promptText = `${imagePrompt}. The main character in this illustration must look like Reference Image 1. Maintain the same facial features, hair, and skin tone. The main character must be prominent in the image. Style: ${styleDescription}`;
           
           // Add specific sidekick instructions if relevant to the scene
           // (Basic implementation: always try to map if sidekicks exist, though ideal would be intelligent mapping based on scene text)
@@ -820,7 +820,7 @@ export default function App() {
       }
 
       // Add Sidekick images
-      if (sidekicks && sidekicks.length > 0) {
+      if (!isCover && sidekicks && sidekicks.length > 0) {
         sidekicks.forEach((sk) => {
            if (sk.photoBase64 && sk.photoMimeType) {
              parts.push({
@@ -860,8 +860,7 @@ export default function App() {
 
     } catch (e) {
       console.error("Image generation error:", e);
-      // Return local fallback image to avoid broken links
-      return FALLBACK_IMAGE; 
+      return `https://placehold.co/800x800/e2e8f0/64748b?text=Image+Generation+Failed`; 
     }
   };
 
@@ -901,7 +900,7 @@ export default function App() {
         {
           "title": "Creative Story Title",
           "scenes": [
-            { "id": 1, "text": "Story text for the left page (approx 2-3 sentences)...", "image_prompt": "Visual description of the right page scene, cute children's book style illustration, no text in image" },
+            { "id": 1, "text": "Story text for the left page (approx 2-3 sentences)...", "image_prompt": "Visual description of the right page scene. IMPORTANT: ${formData.name} MUST appear in every single image prompt. Sidekicks appear only when mentioned in the scene text." },
             ... up to 10 scenes
           ]
         }
