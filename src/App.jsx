@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Camera, Sparkles, Lock, ArrowRight, User, BookOpen, Star, Menu, X, Download, ShoppingBag, Check, Shuffle, AlertCircle, Heart, Truck, ChevronRight, Upload, Plus, Trash2, Users, Palette, Phone, Mail, KeyRound, LogIn, FileText, Printer } from 'lucide-react';
-import { jsPDF } from "jspdf"; 
+import { Camera, Sparkles, Lock, ArrowRight, User, BookOpen, Star, Menu, X, Download, ShoppingBag, Check, Shuffle, AlertCircle, Heart, Truck, ChevronRight, Upload, Plus, Trash2, Users, Palette, Phone, Mail, KeyRound, LogIn, FileText, Printer, LogOut } from 'lucide-react';
+// import { jsPDF } from "jspdf"; // UNCOMMENT THIS IN PRODUCTION (npm install jspdf)
 
 // --- FIREBASE IMPORTS ---
 import { initializeApp } from "firebase/app";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, signOut } from "firebase/auth";
 import { getFirestore, doc, setDoc, collection, addDoc, getDoc, getDocs, query, orderBy, updateDoc } from "firebase/firestore";
 import { getStorage, ref, uploadString, getDownloadURL } from "firebase/storage";
 
@@ -58,7 +58,7 @@ const AUTO_PROMPTS = [
 const generateBookPDF = async (story) => {
   console.log("Generating PDF for:", story.title);
 
-   // --- PRODUCTION IMPLEMENTATION START (Requires jsPDF) ---
+// --- PRODUCTION IMPLEMENTATION START (Requires jsPDF) ---
   try {
     const doc = new jsPDF({
       orientation: "portrait",
@@ -140,7 +140,7 @@ const Header = ({ view, setView, isSignedIn, formData, handleSignInClick, handle
       <div className="bg-indigo-600 text-white p-1.5 rounded-lg shadow-sm cursor-pointer">
         <BookOpen size={20} />
       </div>
-      <span className="font-bold text-xl tracking-tight text-indigo-900 cursor-pointer">WonderTale</span>
+      <span className="font-bold text-xl tracking-tight text-indigo-900 cursor-pointer">Gift A Golpo</span>
     </div>
     
     <div className="flex items-center gap-3">
@@ -419,6 +419,19 @@ const LandingPage = ({ handleStart, view, setView, isSignedIn, formData, handleS
               </div>
           </div>
       </div>
+    </div>
+    
+    {/* Footer Trust Badges */}
+    <div className="text-center pb-12 pt-8 opacity-70 border-t border-gray-100 mt-8">
+        <p className="text-[10px] uppercase font-bold tracking-widest mb-4 text-gray-400">Secure Payments via</p>
+        <div className="flex justify-center gap-6 text-sm font-bold text-slate-600 items-center">
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-pink-600"></span> bKash</span>
+            <span className="text-gray-300">|</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-orange-500"></span> Nagad</span>
+            <span className="text-gray-300">|</span>
+            <span>Visa / Mastercard</span>
+        </div>
+        <p className="text-xs text-gray-400 mt-8">© 2024 Gift A Golpo Bangladesh. All rights reserved.</p>
     </div>
   </div>
 );
@@ -1009,7 +1022,7 @@ const ReaderPage = ({ story, setView, handleBuy }) => {
                          Purchase the full book to reveal this magical scene and complete the story!
                        </p>
                        <button 
-                         onClick={() => { setView('payment'); handleBuy && handleBuy(); }} 
+                         onClick={() => { setView('payment'); handleBuy && handleBuy(story); }} 
                          className="w-full bg-indigo-500 text-white px-6 py-3 rounded-xl text-sm font-bold shadow-lg hover:bg-indigo-600 transition-transform active:scale-95 flex items-center justify-center gap-2"
                        >
                          Unlock Now <ArrowRight size={16} />
@@ -1045,15 +1058,17 @@ const ReaderPage = ({ story, setView, handleBuy }) => {
 };
 
 // --- MY STORIES PAGE (ACCOUNT SPACE) ---
-const MyStoriesPage = ({ savedStories, setView, onReadStory }) => { // Destructure onReadStory
+const MyStoriesPage = ({ savedStories, setView, onReadStory, onLogout, onBuy }) => { 
   return (
     <div className="min-h-screen bg-gray-50">
       <nav className="flex justify-between items-center p-4 bg-white shadow-sm border-b border-gray-100">
         <div className="flex items-center gap-2 cursor-pointer" onClick={() => setView('landing')}>
           <BookOpen size={20} className="text-indigo-600" />
-          <span className="font-bold text-indigo-900">WonderTale</span>
+          <span className="font-bold text-indigo-900">Gift A Golpo</span>
         </div>
-        <button onClick={() => setView('landing')} className="text-sm font-medium text-gray-500">Back</button>
+        <button onClick={onLogout} className="text-sm font-medium text-gray-500 hover:text-red-500 flex items-center gap-1">
+          <LogOut size={16} /> Log Out
+        </button>
       </nav>
       
       <div className="max-w-4xl mx-auto p-6">
@@ -1067,14 +1082,25 @@ const MyStoriesPage = ({ savedStories, setView, onReadStory }) => { // Destructu
          ) : (
            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
              {savedStories.map((story, idx) => (
-               <div key={idx} onClick={() => onReadStory(story)} className="group relative aspect-[3/4] bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden cursor-pointer hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+               <div key={idx} className="group relative aspect-[3/4] bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden cursor-pointer hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
                   <img src={story.coverImage} className="w-full h-full object-cover" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-4">
                     <h3 className="font-bold text-white text-sm line-clamp-2 mb-1">{story.title || "Untitled Story"}</h3>
                     <p className="text-[10px] text-gray-300 mb-3">{story.scenes?.length || 0} Scenes</p>
-                    <button className="w-full bg-white/20 backdrop-blur-sm text-white text-xs py-2 rounded-lg font-bold hover:bg-white/30 transition-colors border border-white/30">
-                      Read Story
-                    </button>
+                    <div className="flex gap-2">
+                        <button 
+                            onClick={(e) => { e.stopPropagation(); onReadStory(story); }} 
+                            className="flex-1 bg-white/20 backdrop-blur-sm text-white text-xs py-2 rounded-lg font-bold hover:bg-white/30 transition-colors border border-white/30"
+                        >
+                        Read
+                        </button>
+                        <button 
+                            onClick={(e) => { e.stopPropagation(); onBuy(story); }} 
+                            className="flex-1 bg-indigo-600 text-white text-xs py-2 rounded-lg font-bold hover:bg-indigo-700 transition-colors shadow-md flex items-center justify-center gap-1"
+                        >
+                            <ShoppingBag size={12} /> Buy
+                        </button>
+                    </div>
                   </div>
                </div>
              ))}
@@ -1235,8 +1261,6 @@ export default function App() {
   const [loadingText, setLoadingText] = useState('Initializing...');
 
   // --- API LOGIC (unchanged) ---
-  // ... (keep generateImageWithNanoBanana and generateStoryWithGemini as is from previous version, just ensure they are included)
-  // Re-pasting for completeness in single-file mandate
   const generateImageWithNanoBanana = async (imagePrompt, referencePhotoBase64, mimeType, isCover = false, title = "", artStyle = "vibrant", sidekicks = []) => {
     if (!API_KEY) {
         setError("Missing API Key. Check your Netlify Environment Variables.");
@@ -1448,6 +1472,18 @@ export default function App() {
 
   const handleSignInClick = () => setShowSignInModal(true);
   const handleLoginClick = () => setShowLoginModal(true);
+  const handleLogout = async () => {
+    try {
+        if (auth) await signOut(auth);
+        setIsSignedIn(false);
+        setUserProfile(null);
+        setSavedStories([]);
+        setView('landing');
+        alert("Logged out successfully!");
+    } catch (error) {
+        console.error("Logout Error:", error);
+    }
+  };
 
   // Fetch stories for a logged-in user
   const fetchUserStories = async (userId) => {
@@ -1666,6 +1702,20 @@ export default function App() {
     setCurrentReadingStory(story);
     setView('reader');
   };
+  
+  // NEW: Handler for Buy from Dashboard
+  const handleBuyFromDashboard = (story) => {
+      setCurrentReadingStory(story);
+      // Since PaymentPage expects storyData, we might need to set it or update PaymentPage to accept currentReadingStory as fallback (already done in PaymentPage prop: storyData={storyData || currentReadingStory})
+      // But we should ideally set storyData if we want to ensure consistency if PaymentPage relies on it, or just rely on currentReadingStory.
+      // PaymentPage currently uses: storyData={storyData || currentReadingStory}
+      // So setting currentReadingStory is enough.
+      // But we also need formData.name.
+      // If we are coming from dashboard, formData might be empty.
+      // We should ideally load formData from the story metadata if possible or just use story.heroName which we saved.
+      // Let's update PaymentPage to use story.heroName if formData.name is missing.
+      setView('payment');
+  };
 
   return (
     <div className="font-sans text-gray-900 antialiased">
@@ -1678,7 +1728,7 @@ export default function App() {
       {view === 'preview' && <PreviewPage storyData={storyData} formData={formData} isSignedIn={isSignedIn} handleSignInClick={handleSignInClick} handleLoginClick={handleLoginClick} handleBuy={handleBuy} setView={setView} />}
       {view === 'reader' && <ReaderPage story={currentReadingStory} setView={setView} handleBuy={handleBuy} />}
       {view === 'payment' && <PaymentPage storyData={storyData || currentReadingStory} formData={formData} setView={setView} onPaymentSuccess={handlePaymentSuccess} />}
-      {view === 'my-stories' && <MyStoriesPage savedStories={savedStories} setView={setView} onReadStory={handleReadStory} />}
+      {view === 'my-stories' && <MyStoriesPage savedStories={savedStories} setView={setView} onReadStory={handleReadStory} onLogout={handleLogout} onBuy={handleBuyFromDashboard} />}
     </div>
   );
 }
